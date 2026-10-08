@@ -1,0 +1,1236 @@
+<!DOCTYPE html>
+<html lang="zh-TW" class="h-full">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>HPE7-A01 認證考試模擬系統</title>
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            aruba: { DEFAULT: '#FF8300', hover: '#E57600', dark: '#CC6900' }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    * { -webkit-tap-highlight-color: transparent; touch-action: manipulation; box-sizing: border-box; }
+    html, body { height: 100%; height: 100dvh; background-color: #070D18; color: #F1F5F9; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    .safe-top { padding-top: max(env(safe-area-inset-top, 0px), 12px); }
+    .safe-bottom { padding-bottom: max(env(safe-area-inset-bottom, 0px), 16px); }
+    .touch-btn:active { transform: scale(0.98); opacity: 0.9; }
+    .custom-scrollbar::-webkit-scrollbar { width: 5px; height: 5px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: #334155; border-radius: 6px; }
+    .card-dark { background: #0F172A; border: 1px solid #1E293B; }
+    .drag-item { cursor: grab; user-select: none; transition: all 0.15s ease; }
+    .drag-item:active { cursor: grabbing; }
+    .drag-item.selected { border-color: #FF8300 !important; background-color: rgba(255, 131, 0, 0.25) !important; transform: scale(1.02); }
+    .drop-slot { min-height: 52px; transition: all 0.2s ease; }
+    .drop-slot.drag-over { border-color: #38BDF8 !important; background-color: rgba(56, 189, 248, 0.15) !important; }
+  </style>
+</head>
+<body class="flex flex-col antialiased overflow-hidden select-none">
+
+  <!-- ================= 頂部導航列 ================= -->
+  <header class="bg-[#0B1120] border-b border-slate-800 safe-top flex-shrink-0 z-30 px-4 h-14 flex items-center justify-between shadow-md">
+    <div class="flex items-center space-x-2.5 cursor-pointer" onclick="showHome()">
+      <div class="w-8 h-8 rounded-lg bg-aruba flex items-center justify-center font-black text-white shadow text-base">
+        <i class="fa-solid fa-network-wired text-sm"></i>
+      </div>
+      <div class="flex flex-col">
+        <span class="font-bold text-white text-sm">HPE7-A01</span>
+        <span class="text-[10px] text-slate-400 leading-none">全真題題幹・Q54更新・60題抽考模擬</span>
+      </div>
+    </div>
+    
+    <button onclick="openDatabaseModal()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold px-3 py-1.5 rounded-xl shadow flex items-center gap-1.5 touch-btn">
+      <i class="fa-solid fa-book-open text-aruba"></i>
+      <span>真題庫速查</span>
+    </button>
+  </header>
+
+  <!-- ================= 主畫面區 ================= -->
+  <main class="flex-1 overflow-y-auto custom-scrollbar p-3 sm:p-4 flex flex-col justify-center max-w-2xl w-full mx-auto pb-8">
+
+    <!-- 1. 首頁視圖 -->
+    <section id="view-home" class="space-y-4 my-auto max-w-lg mx-auto w-full" style="display: block;">
+      
+      <!-- 四項數據統計卡片 -->
+      <div class="grid grid-cols-4 gap-2">
+        <div class="card-dark rounded-2xl p-2.5 text-center shadow">
+          <div class="text-[10px] text-slate-400 font-medium mb-0.5 flex items-center justify-center gap-1">
+            <i class="fa-solid fa-layer-group text-slate-400"></i>
+            <span>總題數</span>
+          </div>
+          <div class="text-xl font-extrabold text-white font-mono" id="stat-total-count">--</div>
+        </div>
+
+        <div class="card-dark rounded-2xl p-2.5 text-center shadow">
+          <div class="text-[10px] text-slate-400 font-medium mb-0.5 flex items-center justify-center gap-1">
+            <i class="fa-solid fa-image text-cyan-400"></i>
+            <span>圖示題</span>
+          </div>
+          <div class="text-xl font-extrabold text-cyan-400 font-mono" id="stat-diag-count">--</div>
+        </div>
+
+        <div class="card-dark rounded-2xl p-2.5 text-center shadow">
+          <div class="text-[10px] text-slate-400 font-medium mb-0.5 flex items-center justify-center gap-1">
+            <i class="fa-solid fa-shuffle text-amber-400"></i>
+            <span>拖曳題</span>
+          </div>
+          <div class="text-xl font-extrabold text-amber-400 font-mono" id="stat-drag-count">--</div>
+        </div>
+
+        <div class="card-dark rounded-2xl p-2.5 text-center shadow">
+          <div class="text-[10px] text-slate-400 font-medium mb-0.5 flex items-center justify-center gap-1">
+            <i class="fa-solid fa-pen-to-square text-emerald-400"></i>
+            <span>純選擇</span>
+          </div>
+          <div class="text-xl font-extrabold text-emerald-400 font-mono" id="stat-pure-choice-count">--</div>
+        </div>
+      </div>
+
+      <!-- 核心 19 題練習 -->
+      <button onclick="startQuiz('all19')" class="w-full bg-[#FF8300] hover:bg-aruba-hover text-white font-bold py-4 px-5 rounded-2xl text-base shadow-xl flex items-center justify-center gap-2.5 touch-btn">
+        <i class="fa-solid fa-circle-play text-lg"></i>
+        <span>練習核心 19 題 (圖示 13 + 拖曳 6)</span>
+      </button>
+
+      <!-- 專攻分流按鈕列 -->
+      <div class="grid grid-cols-2 gap-3">
+        <button onclick="startQuiz('pure_choice')" class="card-dark hover:bg-slate-800 py-3.5 px-3 rounded-2xl text-xs font-semibold text-emerald-200 border border-emerald-800/40 flex items-center justify-center gap-2 shadow touch-btn">
+          <i class="fa-solid fa-pen-to-square text-emerald-400 text-base"></i>
+          <span>純文字選擇題 (完整題目題幹)</span>
+        </button>
+
+        <button onclick="startQuiz('diagram')" class="card-dark hover:bg-slate-800 py-3.5 px-3 rounded-2xl text-xs font-semibold text-slate-200 flex items-center justify-center gap-2 shadow touch-btn">
+          <i class="fa-solid fa-image text-cyan-400 text-base"></i>
+          <span>專攻圖示拓撲 (13題)</span>
+        </button>
+
+        <button onclick="startQuiz('drag')" class="card-dark hover:bg-slate-800 py-3.5 px-3 rounded-2xl text-xs font-semibold text-slate-200 flex items-center justify-center gap-2 shadow touch-btn">
+          <i class="fa-solid fa-shuffle text-amber-400 text-base"></i>
+          <span>專攻拖曳配對 (6題)</span>
+        </button>
+
+        <!-- 修改此按鈕：一次考 60 題 -->
+        <button onclick="startQuiz('random')" class="card-dark hover:bg-slate-800 py-3.5 px-3 rounded-2xl text-xs font-semibold text-purple-200 border border-purple-800/40 flex items-center justify-center gap-2 shadow touch-btn">
+          <i class="fa-solid fa-dice text-purple-400 text-base"></i>
+          <span>官方 60 題抽考模擬 (選項洗牌)</span>
+        </button>
+      </div>
+
+      <!-- 錯題複習專區 -->
+      <button onclick="startQuiz('wrong')" class="w-full bg-[#160E18] hover:bg-[#201322] border border-rose-950/80 py-3.5 px-4 rounded-2xl text-xs font-bold text-rose-400 flex items-center justify-center gap-2 shadow touch-btn">
+        <i class="fa-solid fa-triangle-exclamation text-rose-500 text-base"></i>
+        <span>錯題複習專區 ( <span id="home-wrong-count">0</span> )</span>
+      </button>
+    </section>
+
+    <!-- 2. 測驗作答視圖 -->
+    <section id="view-quiz" class="flex-col space-y-3 my-auto w-full" style="display: none;">
+      <div class="flex items-center justify-between text-xs text-slate-400 border-b border-slate-800 pb-2">
+        <button onclick="showHome()" class="text-slate-400 hover:text-white flex items-center gap-1 touch-btn">
+          <i class="fa-solid fa-chevron-left text-[11px]"></i> 回首頁
+        </button>
+        <span id="quiz-progress" class="font-mono text-aruba font-bold bg-slate-900 px-2.5 py-1 rounded-full border border-slate-800">1 / 1</span>
+        <span id="quiz-mode-pill" class="text-[10px] text-cyan-400 bg-cyan-950/40 border border-cyan-800/40 px-2 py-0.5 rounded-full font-bold">測驗模式</span>
+      </div>
+
+      <div class="card-dark rounded-3xl p-4 sm:p-5 space-y-3.5 shadow-2xl">
+        <div class="flex items-center justify-between">
+          <span id="q-badge" class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-500/20 text-blue-400 border border-blue-500/30">選擇題</span>
+          <span id="q-id-text" class="font-mono text-xs text-slate-400 font-bold">#Q1</span>
+        </div>
+
+        <h3 id="q-text" class="text-xs sm:text-sm font-semibold text-slate-100 leading-relaxed whitespace-pre-line"></h3>
+
+        <!-- 圖示展示區 -->
+        <div id="q-diagram-slot"></div>
+
+        <!-- 選項與作答區 -->
+        <div id="q-options-slot" class="space-y-2 pt-1"></div>
+
+        <!-- 解析抽屜 -->
+        <div id="q-explain-box" class="bg-[#070D18] p-3.5 rounded-2xl border border-slate-800 text-xs space-y-1.5 mt-2" style="display: none;">
+          <div class="flex items-center justify-between">
+            <span class="text-slate-400 font-bold flex items-center gap-1"><i class="fa-solid fa-circle-info text-aruba"></i> 標準答案：</span>
+            <span id="q-explain-key" class="font-mono font-bold text-emerald-400 text-xs sm:text-sm"></span>
+          </div>
+          <p id="q-explain-text" class="text-slate-300 text-[11px] leading-relaxed"></p>
+        </div>
+      </div>
+
+      <div class="flex items-center justify-between pt-1">
+        <button onclick="prevQ()" id="btn-prev" class="px-4 py-2 rounded-xl text-xs font-semibold bg-slate-800 text-slate-300 touch-btn disabled:opacity-30">
+          <i class="fa-solid fa-arrow-left mr-1"></i> 上一題
+        </button>
+        <div class="flex items-center gap-2">
+          <button onclick="toggleExplain()" id="btn-explain" class="px-3.5 py-2 bg-slate-800 text-slate-200 border border-slate-700 rounded-xl text-xs font-semibold touch-btn">
+            看解析
+          </button>
+          <button onclick="nextQ()" id="btn-next" class="px-5 py-2 bg-aruba text-white rounded-xl text-xs font-bold shadow touch-btn">
+            下一題 <i class="fa-solid fa-arrow-right ml-1"></i>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3. 測驗結算視圖 -->
+    <section id="view-score" class="flex-col items-center justify-center space-y-4 text-center my-auto py-6 max-w-md mx-auto w-full" style="display: none;">
+      <div class="w-16 h-16 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-3xl border border-emerald-500/30">
+        <i class="fa-solid fa-trophy"></i>
+      </div>
+      <div>
+        <h2 class="text-xl font-bold text-white mb-1">測驗完成！</h2>
+        <p class="text-xs text-slate-400">已完整演練選定題型</p>
+      </div>
+
+      <div class="grid grid-cols-2 gap-3 w-full max-w-xs bg-slate-900 border border-slate-800 p-4 rounded-2xl">
+        <div>
+          <span class="text-[10px] text-slate-400 block">正確率</span>
+          <span id="score-pct" class="text-2xl font-black text-aruba font-mono">100%</span>
+        </div>
+        <div>
+          <span class="text-[10px] text-slate-400 block">答對題數</span>
+          <span id="score-count" class="text-2xl font-black text-emerald-400 font-mono">0 / 0</span>
+        </div>
+      </div>
+
+      <div class="flex gap-2.5 w-full max-w-xs pt-2">
+        <button onclick="showHome()" class="flex-1 py-3 rounded-xl bg-slate-800 text-slate-200 text-xs font-bold border border-slate-700 touch-btn">
+          回到首頁
+        </button>
+        <button onclick="retryCurrentMode()" class="flex-1 py-3 rounded-xl bg-aruba text-white text-xs font-bold shadow touch-btn">
+          再測一次
+        </button>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ================= 題庫速查彈跳視窗 ================= -->
+  <div id="modal-database" class="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex-col justify-end sm:justify-center p-0 sm:p-4" style="display: none;">
+    <div class="bg-[#0B1120] border-t sm:border border-slate-700 rounded-t-3xl sm:rounded-3xl w-full max-w-3xl mx-auto h-[92vh] flex flex-col overflow-hidden shadow-2xl">
+      <div class="p-3.5 bg-slate-900 border-b border-slate-800 flex items-center justify-between flex-shrink-0">
+        <div class="flex items-center space-x-2">
+          <i class="fa-solid fa-book-open text-aruba text-sm"></i>
+          <h3 class="font-bold text-sm text-white">HPE7-A01 真題庫速查</h3>
+          <span class="text-[10px] bg-slate-800 text-slate-400 px-2 py-0.5 rounded-full font-mono" id="db-counter">共 161 題</span>
+        </div>
+        <button onclick="closeDatabaseModal()" class="w-8 h-8 rounded-full bg-slate-800 text-slate-300 hover:text-white flex items-center justify-center touch-btn">
+          <i class="fa-solid fa-xmark text-sm"></i>
+        </button>
+      </div>
+
+      <div class="p-3 bg-[#070D18] border-b border-slate-800 flex flex-col gap-2 flex-shrink-0">
+        <div class="relative">
+          <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></i>
+          <input type="text" id="db-search-input" oninput="filterDatabase()" placeholder="搜尋題號 (#54, #49)、完整題幹關鍵字 (VSX, OSPF, operators)..." 
+                 class="w-full bg-slate-900 border border-slate-700 rounded-xl pl-8 pr-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-aruba" />
+        </div>
+        <div class="flex items-center gap-1.5 overflow-x-auto custom-scrollbar pb-0.5 text-[11px]">
+          <button onclick="setDbFilter('all')" class="db-chip active whitespace-nowrap px-2.5 py-1 rounded-lg font-bold bg-aruba text-white" data-filter="all">全部 (161)</button>
+          <button onclick="setDbFilter('pure_choice')" class="db-chip whitespace-nowrap px-2.5 py-1 rounded-lg bg-slate-800 text-slate-300 border border-slate-700" data-filter="pure_choice">📝 純選擇題 (142)</button>
+          <button onclick="setDbFilter('diagram')" class="db-chip whitespace-nowrap px-2.5 py-1 rounded-lg bg-slate-800 text-slate-300 border border-slate-700" data-filter="diagram">🖼️ 圖示題 (13)</button>
+          <button onclick="setDbFilter('drag')" class="db-chip whitespace-nowrap px-2.5 py-1 rounded-lg bg-slate-800 text-slate-300 border border-slate-700" data-filter="drag">🧩 拖曳題 (6)</button>
+        </div>
+      </div>
+
+      <div id="db-list-container" class="flex-1 overflow-y-auto custom-scrollbar p-3 sm:p-5 space-y-4"></div>
+    </div>
+  </div>
+
+  <!-- ================= JAVASCRIPT 全題庫資料與核心邏輯 ================= -->
+  <script>
+    function formatQuestionItem(item) {
+      let opts = [];
+      if (item.options) {
+        opts = item.options.map(o => ({ key: o.key, text: o.text }));
+      }
+
+      let rawAns = item.answer || "A";
+      let correctKeys = Array.isArray(rawAns) ? rawAns : (typeof rawAns === 'string' && rawAns.includes(',') ? rawAns.split(',').map(s => s.trim()) : [rawAns]);
+
+      let correctTexts = [];
+      if (opts.length > 0) {
+        correctTexts = opts.filter(o => correctKeys.includes(o.key)).map(o => o.text.trim());
+      }
+
+      return {
+        id: item.id,
+        badge: item.badge || (item.isDiagram ? "圖示拓撲題" : (item.isDrag ? "拖曳配對題" : "純文字選擇題")),
+        question: item.question || "",
+        originalOptions: opts,
+        correctTexts: correctTexts,
+        answer: Array.isArray(rawAns) ? rawAns : (correctKeys.length > 1 ? correctKeys : correctKeys[0]),
+        explanation: item.explanation || "原廠認證官方核心技術考點。",
+        diagram: item.diagram || '',
+        isDiagram: !!item.isDiagram,
+        isDrag: !!item.isDrag,
+        dragType: item.dragType || '',
+        slots: item.slots || [],
+        items: item.items || [],
+        correctMatches: item.correctMatches || [],
+        isMultiUse: !!item.isMultiUse
+      };
+    }
+
+    const TOPOLOGY_SVGS = {
+      antenna: `
+        <div class="bg-[#070D18] p-3 rounded-2xl border border-slate-800 flex flex-col items-center my-2">
+          <span class="text-[10px] font-mono text-cyan-400 font-bold mb-1 uppercase tracking-wider">Horizontal Radiation Pattern (雙色場型圖)</span>
+          <svg viewBox="0 0 340 330" class="w-72 h-auto max-w-full rounded-2xl mx-auto my-1 shadow-lg bg-white border border-slate-300">
+            <g stroke="#CBD5E1" stroke-width="0.8">
+              <circle cx="170" cy="155" r="130" fill="none" stroke="#94A3B8" stroke-width="1.2"/>
+              <circle cx="170" cy="155" r="104" fill="none"/>
+              <circle cx="170" cy="155" r="78" fill="none"/>
+              <circle cx="170" cy="155" r="52" fill="none"/>
+              <circle cx="170" cy="155" r="26" fill="none"/>
+              <line x1="170" y1="25" x2="170" y2="285" stroke="#94A3B8" stroke-width="1"/>
+              <line x1="40" y1="155" x2="300" y2="155" stroke="#94A3B8" stroke-width="1"/>
+              <line x1="78" y1="63" x2="262" y2="247"/><line x1="78" y1="247" x2="262" y2="63"/>
+              <line x1="44" y1="121" x2="296" y2="189"/><line x1="44" y1="189" x2="296" y2="121"/>
+              <line x1="102" y1="44" x2="238" y2="266"/><line x1="102" y1="266" x2="238" y2="44"/>
+              <line x1="136" y1="29" x2="204" y2="281"/><line x1="204" y1="29" x2="136" y2="281"/>
+              <line x1="57" y1="87" x2="283" y2="223"/><line x1="57" y1="223" x2="283" y2="87"/>
+            </g>
+            <g font-size="8" fill="#475569" font-family="sans-serif" text-anchor="middle">
+              <text x="170" y="18" font-weight="bold" fill="#0F172A">180</text>
+              <text x="125" y="27">165</text><text x="215" y="27">-165</text>
+              <text x="86" y="46">150</text><text x="254" y="46">-150</text>
+              <text x="56" y="76">135</text><text x="284" y="76">-135</text>
+              <text x="35" y="112">120</text><text x="305" y="112">-120</text>
+              <text x="26" y="148">105</text><text x="314" y="148">-105</text>
+              <text x="28" y="162">90</text><text x="312" y="162">-90</text>
+              <text x="38" y="196">75</text><text x="302" y="196">-75</text>
+              <text x="58" y="232">60</text><text x="282" y="232">-60</text>
+              <text x="88" y="262">45</text><text x="252" y="262">-45</text>
+              <text x="124" y="282">30</text><text x="216" y="282">-30</text>
+              <text x="150" y="293">15</text><text x="190" y="293">-15</text>
+              <text x="170" y="298" font-weight="bold">0</text>
+            </g>
+            <path d="M 170 155 C 152 148, 142 135, 126 122 C 114 112, 112 98, 124 95 C 136 92, 148 100, 154 105 C 160 110, 166 112, 170 112 C 174 112, 180 110, 186 105 C 192 100, 204 92, 216 95 C 228 98, 226 112, 214 122 C 198 135, 188 148, 170 155 Z" fill="none" stroke="#166534" stroke-width="2.2" stroke-linejoin="round"/>
+            <path d="M 170 155 C 155 158, 130 156, 122 142 C 116 130, 128 122, 138 128 C 148 134, 162 148, 170 155 Z" fill="none" stroke="#166534" stroke-width="1.8" stroke-linejoin="round"/>
+            <path d="M 170 155 C 160 162, 150 172, 158 176 C 166 180, 168 165, 170 155 C 172 165, 174 180, 182 176 C 190 172, 180 162, 170 155 Z" fill="none" stroke="#166534" stroke-width="1.8"/>
+            <path d="M 170 155 C 146 142, 128 115, 116 78 C 106 48, 130 22, 170 22 C 210 22, 234 48, 224 78 C 212 115, 194 142, 170 155 Z" fill="none" stroke="#1E3A8A" stroke-width="2.6" stroke-linejoin="round"/>
+            <path d="M 170 155 C 152 144, 136 118, 125 82 C 118 56, 138 28, 170 28 C 202 28, 222 56, 215 82 C 204 118, 188 144, 170 155 Z" fill="none" stroke="#1E3A8A" stroke-width="1.6" stroke-dasharray="0.5 0.5"/>
+            <circle cx="170" cy="155" r="2.5" fill="#0284C7"/>
+            <text x="170" y="320" fill="#0369A1" font-size="12" font-weight="bold" text-anchor="middle">Horizontal Pattern</text>
+          </svg>
+          <div class="text-[10px] text-slate-400 text-center mt-1">
+            <span class="text-blue-400 font-bold mr-1">● 深藍色</span>主波束直衝 180°；<span class="text-emerald-400 font-bold mr-1">● 綠色</span>兩側波浪狀側瓣，典型指向性天線（Directional Antenna）。
+          </div>
+        </div>
+      `,
+      q19: `
+        <div class="bg-[#070D18] p-3 rounded-2xl border border-slate-800 my-2 space-y-3">
+          <div>
+            <span class="text-[10px] font-mono text-cyan-400 font-bold mb-1.5 block uppercase">Aruba Central ➔ Wireless SSIDs 題幹截圖 (Exhibit 1)</span>
+            <svg viewBox="0 0 450 155" class="w-full h-auto max-w-md mx-auto">
+              <rect x="2" y="2" width="446" height="151" rx="4" fill="#FFFFFF" stroke="#CBD5E1"/>
+              <rect x="2" y="2" width="75" height="4" fill="#FF8300"/>
+              <text x="35" y="25" fill="#1E293B" font-size="9.5" font-weight="bold" text-anchor="middle">Access Points</text>
+              <text x="105" y="25" fill="#475569" font-size="9" text-anchor="middle">Switches</text>
+              <text x="170" y="25" fill="#475569" font-size="9" text-anchor="middle">Gateways</text>
+              <line x1="2" y1="36" x2="448" y2="36" stroke="#E2E8F0" stroke-width="1"/>
+              <line x1="2" y1="56" x2="448" y2="56" stroke="#E2E8F0" stroke-width="1"/>
+              <rect x="10" y="54" width="36" height="2" fill="#FF8300"/>
+              <text x="12" y="48" fill="#FF8300" font-size="8" font-weight="bold">WLANs</text>
+              <text x="50" y="48" fill="#64748B" font-size="7.5">Access Points</text>
+              <text x="108" y="48" fill="#64748B" font-size="7.5">Radios</text>
+              <text x="145" y="48" fill="#64748B" font-size="7.5">Interfaces</text>
+              <text x="188" y="48" fill="#64748B" font-size="7.5">Security</text>
+              <text x="12" y="72" fill="#475569" font-size="8.5" font-weight="bold">Wireless SSIDs</text>
+              <rect x="8" y="78" width="434" height="18" fill="#F8FAFC"/>
+              <text x="16" y="90" fill="#64748B" font-size="7.5">Name (Profile)</text>
+              <text x="130" y="90" fill="#64748B" font-size="7.5">Security</text>
+              <text x="220" y="90" fill="#64748B" font-size="7.5">Access Type</text>
+              <text x="305" y="90" fill="#64748B" font-size="7.5">Traffic forwarding mode</text>
+              <rect x="8" y="96" width="434" height="24" fill="#006363"/>
+              <text x="28" y="111" fill="#FFFFFF" font-size="8" font-weight="bold">secure_wireless</text>
+              <text x="130" y="111" fill="#FFFFFF" font-size="7.5">wpa2-aes</text>
+              <text x="220" y="111" fill="#FFFFFF" font-size="7.5">Role Based</text>
+              <text x="305" y="111" fill="#FFFFFF" font-size="7.5">Bridge</text>
+            </svg>
+          </div>
+          <div>
+            <span class="text-[10px] font-mono text-emerald-400 font-bold mb-1.5 block uppercase">Windows 802.1X GPO 對應正確設定</span>
+            <svg viewBox="0 0 450 140" class="w-full h-auto max-w-md mx-auto">
+              <rect x="2" y="2" width="446" height="136" rx="6" fill="#1E293B" stroke="#475569"/>
+              <text x="14" y="20" fill="#F1F5F9" font-size="9" font-weight="bold">secure_wireless Wireless Network Properties</text>
+              <text x="20" y="48" fill="#94A3B8" font-size="8">Choose network auth method:</text>
+              <rect x="150" y="38" width="260" height="18" fill="#0F172A" stroke="#38BDF8" rx="3"/>
+              <text x="158" y="50" fill="#38BDF8" font-size="8" font-weight="bold">Microsoft: Smart Card or other certificate</text>
+              <rect x="18" y="70" width="414" height="50" fill="#020617" stroke="#10B981" rx="4"/>
+              <text x="26" y="88" fill="#10B981" font-size="8" font-weight="bold">Advanced settings ➔ 802.1X settings:</text>
+              <text x="26" y="106" fill="#FFFFFF" font-size="8">Specify authentication mode: <tspan fill="#34D399" font-weight="bold">Computer authentication</tspan></text>
+            </svg>
+          </div>
+        </div>
+      `,
+      q23: `
+        <div class="bg-[#070D18] p-3 rounded-2xl border border-slate-800 my-2">
+          <span class="text-[10px] font-mono text-cyan-400 font-bold mb-1.5 block text-center uppercase">Aruba Central ➔ Wireless SSIDs 表格 (Q23 Exhibit)</span>
+          <svg viewBox="0 0 350 130" class="w-full h-auto max-w-sm mx-auto">
+            <rect x="5" y="5" width="340" height="120" rx="6" fill="#0F172A" stroke="#334155"/>
+            <text x="15" y="25" fill="#38BDF8" font-size="8" font-weight="bold">Wireless SSIDs</text>
+            <rect x="10" y="35" width="330" height="16" fill="#1E293B"/>
+            <text x="16" y="46" fill="#94A3B8" font-size="7">Name</text><text x="95" y="46" fill="#94A3B8" font-size="7">Security</text><text x="220" y="46" fill="#94A3B8" font-size="7">Access Type</text>
+            <rect x="10" y="55" width="330" height="20" fill="rgba(245, 158, 11, 0.1)" stroke="#F59E0B" stroke-width="1"/>
+            <text x="16" y="68" fill="#FBBF24" font-size="7.5" font-weight="bold">open_wireless</text>
+            <text x="95" y="68" fill="#F87171" font-size="7.5" font-weight="bold">opensystem ⚠️</text>
+            <text x="16" y="100" fill="#38BDF8" font-size="7.5">需改為 WPA3-Enhanced Open 才能在 6 GHz 啟用 OWE 加密</text>
+          </svg>
+        </div>
+      `,
+      q45: `
+        <div class="bg-[#070D18] p-3 rounded-2xl border border-slate-800 my-2">
+          <span class="text-[10px] font-mono text-cyan-400 font-bold mb-1.5 block text-center uppercase">VSX 雙核心 & 下聯 6100 連線圖</span>
+          <svg viewBox="0 0 500 180" class="w-full h-auto max-w-md mx-auto">
+            <rect x="50" y="30" width="130" height="40" rx="6" fill="#1E293B" stroke="#64748B"/>
+            <text x="115" y="55" fill="#FFF" font-size="9" font-weight="bold" text-anchor="middle">Aruba 8360 #1 (Primary)</text>
+            <rect x="320" y="30" width="130" height="40" rx="6" fill="#1E293B" stroke="#64748B"/>
+            <text x="385" y="55" fill="#FFF" font-size="9" font-weight="bold" text-anchor="middle">Aruba 8360 #2 (Secondary)</text>
+            <line x1="180" y1="45" x2="320" y2="45" stroke="#38BDF8" stroke-width="2.5"/>
+            <text x="250" y="40" fill="#38BDF8" font-size="8" text-anchor="middle">ISL LAG (2)</text>
+            <line x1="180" y1="60" x2="320" y2="60" stroke="#A855F7" stroke-width="1.8"/>
+            <text x="250" y="72" fill="#C084FC" font-size="8" text-anchor="middle">Keep-Alive</text>
+            <rect x="180" y="125" width="140" height="35" rx="6" fill="#1E293B" stroke="#64748B"/>
+            <text x="250" y="146" fill="#FFF" font-size="8.5" font-weight="bold" text-anchor="middle">Aruba 6100 Access</text>
+            <path d="M 115 70 L 115 110 L 220 125" fill="none" stroke="#A855F7" stroke-width="1.8"/>
+            <path d="M 385 70 L 385 110 L 280 125" fill="none" stroke="#A855F7" stroke-width="1.8"/>
+          </svg>
+        </div>
+      `,
+      q48: `
+        <div class="bg-[#070D18] p-3 rounded-2xl border border-slate-800 my-2">
+          <span class="text-[10px] font-mono text-cyan-400 font-bold mb-1.5 block text-center uppercase">VSX ISL 中斷分析拓撲 (Q48)</span>
+          <svg viewBox="0 0 450 200" class="w-full h-auto max-w-md mx-auto">
+            <rect x="60" y="40" width="110" height="45" rx="6" fill="#1E293B" stroke="#FF8300" stroke-width="1.5"/>
+            <text x="115" y="66" fill="#FFF" font-size="9" font-weight="bold" text-anchor="middle">Primary</text>
+            <rect x="280" y="40" width="110" height="45" rx="6" fill="#1E293B" stroke="#FF8300" stroke-width="1.5"/>
+            <text x="335" y="66" fill="#FFF" font-size="9" font-weight="bold" text-anchor="middle">Secondary</text>
+            <line x1="170" y1="55" x2="280" y2="55" stroke="#EF4444" stroke-width="3" stroke-dasharray="4 4"/>
+            <text x="225" y="50" fill="#EF4444" font-size="9" font-weight="bold" text-anchor="middle">ISL ❌ (中斷)</text>
+            <line x1="170" y1="72" x2="280" y2="72" stroke="#10B981" stroke-width="2.5"/>
+            <text x="225" y="86" fill="#10B981" font-size="8" font-weight="bold" text-anchor="middle">Keepalive ✓ (正常)</text>
+            <rect x="60" y="140" width="80" height="35" rx="4" fill="#0F172A" stroke="#64748B"/>
+            <text x="100" y="162" fill="#FFF" font-size="8" text-anchor="middle">Server 1 (雙歸屬)</text>
+            <rect x="310" y="140" width="80" height="35" rx="4" fill="#0F172A" stroke="#64748B"/>
+            <text x="350" y="162" fill="#FFF" font-size="8" text-anchor="middle">Server 2 (單掛 Sec)</text>
+            <line x1="100" y1="85" x2="100" y2="140" stroke="#10B981" stroke-width="2"/>
+            <line x1="335" y1="85" x2="350" y2="140" stroke="#EF4444" stroke-width="2" stroke-dasharray="3 2"/>
+          </svg>
+        </div>
+      `,
+      q49: `
+        <div class="bg-[#070D18] p-3 rounded-2xl border border-slate-800 my-2">
+          <span class="text-[10px] font-mono text-cyan-400 font-bold mb-1.5 block text-center uppercase">AOS-10 狀態檢驗防火牆 (Stateful Session ACL)</span>
+          <svg viewBox="0 0 350 120" class="w-full h-auto max-w-sm mx-auto">
+            <rect x="10" y="30" width="80" height="35" rx="5" fill="#1E293B" stroke="#38BDF8"/>
+            <text x="50" y="52" fill="#FFF" font-size="8" text-anchor="middle">Wired Host</text>
+            <rect x="130" y="20" width="100" height="85" rx="6" fill="#0F172A" stroke="#FF8300"/>
+            <text x="180" y="36" fill="#FF8300" font-size="8" text-anchor="middle" font-weight="bold">AOS-10 Gateway</text>
+            <text x="180" y="54" fill="#F87171" font-size="6.5" text-anchor="middle">1: user any icmp deny</text>
+            <text x="180" y="68" fill="#34D399" font-size="6.5" text-anchor="middle">2: any any icmp permit</text>
+            <rect x="260" y="30" width="80" height="35" rx="5" fill="#1E293B" stroke="#F59E0B"/>
+            <text x="300" y="52" fill="#FFF" font-size="8" text-anchor="middle">Wireless Client</text>
+          </svg>
+        </div>
+      `,
+      mstp: `
+        <div class="bg-[#070D18] p-3 rounded-2xl border border-slate-800 my-2">
+          <span class="text-[10px] font-mono text-cyan-400 font-bold mb-1 block text-center uppercase">MSTP 雙核心四節點拓撲 (Exhibit)</span>
+          <svg viewBox="0 0 300 220" class="w-full h-auto max-w-xs mx-auto">
+            <line x1="75" y1="50" x2="225" y2="50" stroke="#475569" stroke-width="3"/>
+            <line x1="75" y1="50" x2="75" y2="160" stroke="#475569" stroke-width="3"/>
+            <line x1="225" y1="50" x2="225" y2="160" stroke="#475569" stroke-width="3"/>
+            <line x1="75" y1="50" x2="225" y2="160" stroke="#475569" stroke-width="3"/>
+            <line x1="225" y1="50" x2="75" y2="160" stroke="#475569" stroke-width="3"/>
+            <rect x="50" y="25" width="50" height="50" rx="8" fill="#FFFFFF" stroke="#475569"/>
+            <text x="75" y="18" fill="#F8FAFC" font-size="11" font-weight="bold" text-anchor="middle">Core-1</text>
+            <rect x="200" y="25" width="50" height="50" rx="8" fill="#FFFFFF" stroke="#475569"/>
+            <text x="225" y="18" fill="#F8FAFC" font-size="11" font-weight="bold" text-anchor="middle">Core-2</text>
+            <rect x="50" y="135" width="50" height="50" rx="8" fill="#FFFFFF" stroke="#475569"/>
+            <text x="75" y="200" fill="#F8FAFC" font-size="11" font-weight="bold" text-anchor="middle">Access-1</text>
+            <rect x="200" y="135" width="50" height="50" rx="8" fill="#FFFFFF" stroke="#475569"/>
+            <text x="225" y="200" fill="#F8FAFC" font-size="11" font-weight="bold" text-anchor="middle">Access-2</text>
+          </svg>
+        </div>
+      `,
+      q159: `
+        <div class="bg-[#070D18] p-3 rounded-2xl border border-slate-800 my-2 space-y-2">
+          <div class="bg-[#020617] p-2 rounded-xl border border-slate-700/80 font-mono text-xs text-slate-200">
+            <p class="text-slate-100 font-bold">interface lag 10</p>
+            <p class="pl-4 text-emerald-400">no shutdown</p>
+            <p class="pl-4 text-emerald-400">vlan trunk allowed all</p>
+          </div>
+          <svg viewBox="0 0 420 180" class="w-full h-auto max-w-sm mx-auto">
+            <rect x="80" y="20" width="70" height="35" rx="6" fill="#FFF" stroke="#475569"/>
+            <text x="115" y="42" fill="#000" font-size="9" font-weight="bold" text-anchor="middle">gw1</text>
+            <rect x="270" y="20" width="70" height="35" rx="6" fill="#FFF" stroke="#475569"/>
+            <text x="305" y="42" fill="#000" font-size="9" font-weight="bold" text-anchor="middle">gw2</text>
+            <rect x="60" y="110" width="90" height="40" rx="6" fill="#FFF" stroke="#475569"/>
+            <text x="105" y="135" fill="#000" font-size="8.5" font-weight="bold" text-anchor="middle">sw-agg1 (pri)</text>
+            <rect x="270" y="110" width="90" height="40" rx="6" fill="#FFF" stroke="#475569"/>
+            <text x="315" y="135" fill="#000" font-size="8.5" font-weight="bold" text-anchor="middle">sw-agg2 (sec)</text>
+            <line x1="150" y1="125" x2="270" y2="125" stroke="#3B82F6" stroke-width="3"/>
+            <text x="210" y="120" fill="#38BDF8" font-size="7.5" text-anchor="middle">ISL lag256</text>
+            <line x1="150" y1="138" x2="270" y2="138" stroke="#EF4444" stroke-width="2" stroke-dasharray="3 3"/>
+            <text x="210" y="148" fill="#EF4444" font-size="7.5" text-anchor="middle">KA ❌</text>
+            <line x1="300" y1="55" x2="115" y2="110" stroke="#000" stroke-width="2"/>
+            <line x1="315" y1="55" x2="315" y2="110" stroke="#000" stroke-width="2"/>
+          </svg>
+        </div>
+      `
+    };
+
+    const CORE_19_IDS = [6, 19, 20, 23, 45, 48, 49, 66, 79, 97, 99, 103, 114, 119, 137, 145, 147, 159, 161];
+
+    const RAW_EXAM_DATABASE = [
+      { id: 1, question: "Which feature supported by SNMPv3 provides an advantage over SNMPv2c?", options: [{key:"A",text:"Authentication"},{key:"B",text:"Transport mapping"},{key:"C",text:"GetBulk"},{key:"D",text:"Community strings"}], answer: "A", explanation: "SNMPv3 相較於 SNMPv2c 增加了身分驗證（Authentication）與選用加密機制，提供完整性與存取控制保護。" },
+      { id: 2, question: "You are doing tests in your lab and with the following equipment specifications:\nAP1 has a radio that generates a 16 dBm signal.\nAP2 has a radio that generates a 13 dBm signal.\nAP1 has an antenna with a gain of 8 dBi.\nAP2 has an antenna with a gain of 12 dBi.\nThe antenna cable for AP1 has a 4 dB loss.\nThe antenna cable for AP2 has a 3 dB loss.\nWhat would be the calculated Equivalent Isotropic Radiated Power (EIRP) for AP1?", options: [{key:"A",text:"40 dBm"},{key:"B",text:"20 dBm"},{key:"C",text:"15 dBm"},{key:"D",text:"-9 dBm"}], answer: "B", explanation: "EIRP 計算公式：發射功率 (16 dBm) + 天線增益 (8 dBi) - 纜線耗損 (4 dB) = 20 dBm。" },
+      { id: 3, question: "Which statement is correct for the HPE Aruba Networking Analytics Engine (NAE) in VSX environment?", options: [{key:"A",text:"NAE is not VSX aware and the python-based agents on each member device store sensor values locally."},{key:"B",text:"NAE is VSX aware and the ruby-based agents on each member device store sensor values remotely."},{key:"C",text:"Each switch in the VSX pair maintains its own independent NAE agent and stores sensor values locally."},{key:"D",text:"NAE is VSX aware and the python-based agents on each member device store sensor values remotely."}], answer: "C", explanation: "在 VSX 雙機架構中，兩台交換器各自獨立執行 Python-based NAE agents，感測數據皆儲存在本機記憶庫中。" },
+      { id: 4, question: "Your manufacturing client is deploying two hundred wireless IP cameras and fifty headless scanners in their warehouse. These new devices do not support 802.1X authentication.\nHow can HPE Aruba Networking enhance security for these new IP cameras in this environment?", options: [{key:"A",text:"MPSK Local will allow the cameras to share a key and the scanners to share a different key."},{key:"B",text:"MPSK provides for each device in the WLAN to have its own unique pre-shared key."},{key:"C",text:"HPE Aruba Networking Central will derive the unique pre-shared keys when the devices are deployed."},{key:"D",text:"Use MPSK Local to automatically provide unique pre-shared keys for devices."}], answer: "A", explanation: "MPSK Local 可依設備類型建立群組金鑰（如相機共用一把金鑰、掃描器共用另一把金鑰），簡化維運並達成安全隔離。" },
+      { id: 5, question: "What is a primary benefit of BSS coloring?", options: [{key:"A",text:"BSS color tags improve performance by allowing APs on the same channel to be farther apart."},{key:"B",text:"BSS color tags are applied to client devices and can reduce the threshold for interference."},{key:"C",text:"BSS color tags are applied on the wireless controllers and can reduce the threshold for interference."},{key:"D",text:"BSS color tags are applied to Wi-Fi channels and can reduce the threshold for interference."}], answer: "D", explanation: "802.11ax BSS Coloring 套用於 Wi-Fi 信道訊框中，動態調整同頻道競爭干擾門檻，提升空間重用效能（已採納修正為 D）。" },
+      { id: 6, isDiagram: true, diagram: TOPOLOGY_SVGS.antenna, badge: "圖示拓撲題", question: "Your customer is complaining of weak Wi-Fi coverage in their office. They mention that the office on the other side of the hall has much better signal. What is the likely cause of this issue?", options: [{key:"A",text:"The AP only supports 5 GHz."},{key:"B",text:"The AP only supports 2.4 GHz."},{key:"C",text:"The AP is an outdoor access point."},{key:"D",text:"The AP is using a directional antenna."}], answer: "D", explanation: "極座標水平場型圖能量集中於 180° 主波束，側邊與背後衰減劇烈，判定為 Directional Antenna（指向性天線）。" },
+      { id: 7, question: "For the CX 6400 switch, what does virtual output queueing (VOQ) implement that is different from most typical campus switches?", options: [{key:"A",text:"large egress packet buffers"},{key:"B",text:"large ingress packet buffers"},{key:"C",text:"per port ASICS"},{key:"D",text:"VSX"}], answer: "B", explanation: "CX 6400 採用大型 Ingress 緩衝區實作 Virtual Output Queueing (VOQ)，從輸入端即避免 Head-of-line 阻塞。" },
+      { id: 8, question: "With a CX switch, how would you use loopback 0 as a primary interface for the sFlow protocol?", options: [{key:"A",text:"Set sflow collector server with interface loopback 0."},{key:"B",text:"Configure sflow server group ip source with loopback 0."},{key:"C",text:"Use loopback 0 with sflow-destination."},{key:"D",text:"Define loopback 0 with source-interface."}], answer: "D", explanation: "在 AOS-CX CLI 中，指定服務協定的來源介面一律使用 source-interface 指令。" },
+      { id: 9, question: "You need to have different routing-table requirements with Aruba CX 6300 VSF configuration.\nAssuming the correct layer-2 VLAN already exists, how would you create a new SVI for a separate routing table?", options: [{key:"A",text:"Create a new routing table, and attach VLANs to it."},{key:"B",text:"Create a new VLAN, and attach the VRF to it."},{key:"C",text:"Create a new interface VLAN and attach vrf custom-vrf."},{key:"D",text:"Create a new VRF, and add new SVI under the configuration."}], answer: "D", explanation: "欲建立隔離的路由表，必須先建立 VRF 實例，再於其設定架構下新增或關聯對應的 SVI。" },
+      { id: 10, question: "Your customer has asked you to assign a switch management role for a new user. The customer requires the user role to view nonsensitive switch configuration information and only has the GET method for REST API for all resources other than \\login and \\logout.\nWhich default AOS-CX user role meets these requirements?", options: [{key:"A",text:"sysadmin"},{key:"B",text:"config"},{key:"C",text:"administrators"},{key:"D",text:"operators"}], answer: "D", explanation: "operators 是 AOS-CX 內建的唯讀角色，僅具備 Level 1 權限，無法變更任何設定，REST 僅開放 GET 查詢。" },
+      { id: 11, question: "You are deploying a bonded 40 MHz wide channel. What is the difference in the noise floor perceived by a client using this bonded channel as compared to an unbonded 20MHz wide channel?", options: [{key:"A",text:"6dB"},{key:"B",text:"8dB"},{key:"C",text:"3dB"},{key:"D",text:"4dB"}], answer: "C", explanation: "頻道寬度每翻倍一次（20MHz ➔ 40MHz），熱雜訊底層（Noise Floor）增加 3dB。" },
+      { id: 12, question: "AppRF 2.0 allows you to:", options: [{key:"A",text:"monitor applications and radio frequencies"},{key:"B",text:"customize application signatures"},{key:"C",text:"configure ACL and bandwidth control for applications"},{key:"D",text:"classify web content based on reputation"}], answer: "C", explanation: "AppRF 2.0 提供第七層深度封包檢驗可視性，支援基於應用的頻寬限速與存取控制列表（ACL）。" },
+      { id: 13, question: "A system engineer needs to preconfigure several CX 6300 switches that will be sent to a remote office. An untrained local field technician will do the rollout of the switches and the mounting of several AP-515s and AP-575s. Cables running to the APs are not labeled.\nThe VLANs are already preconfigured to VLAN 100 (mgmt.), VLAN 200 (clients), and VLAN 300 (guests).\nWhat is the correct configuration to ensure that APs will work properly?", options: [{key:"A",text:"seq 10 match sys-desc 515..."},{key:"B",text:"misplaced no shutdown..."},{key:"C",text:"port-access lldp-group IAP-Group\n seq 10 match sys-desc AP-515\n seq 20 match sys-desc AP-575\nport-access role IAP-Role\n description ARUBA AP\n poe-priority high\n trust-mode dscp\n vlan trunk native 100\n vlan trunk allowed 100,200,300\nenable\nport-access device-profile IAP-Profile\n associate role IAP-Role\n associate lldp-group IAP-Group"},{key:"D",text:"trunk allowed 100.200 syntax error"}], answer: "C", explanation: "AP LLDP 宣告的完整字串為 AP-515 與 AP-575，設定檔需精準匹配 sys-desc，並正確宣告 native 與 allowed trunk。" },
+      { id: 14, question: "You are setting up a customer's 150 headless IoT devices that do not support 802.1X.\nWhat should you use?", options: [{key:"A",text:"Multiple Pre-Shared Keys (MPSK) Local"},{key:"B",text:"HPE Aruba Networking ClearPass profiling with WPA-PSK"},{key:"C",text:"HPE Aruba Networking ClearPass profiling with MAC-AUTH"},{key:"D",text:"Multiple Pre-Shared Keys (MPSK) with WPA3-AES"}], answer: "C", explanation: "依您畫面螢光筆重點指定修正為 C：ClearPass 設備指紋識別搭配 MAC 認證。" },
+      { id: 15, question: "How is Dynamic Multicast Optimization (DMO) implemented in an HPE Aruba Networking wireless network?", options: [{key:"A",text:"DMO is configured individually for each VLAN in use in the network."},{key:"B",text:"The controller uses QoS to provide equal air time for multicast traffic."},{key:"C",text:"The controller converts multicast streams into unicast streams."},{key:"D",text:"The wireless AP converts multicast streams into unicast streams."}], answer: "D", explanation: "依您畫面螢光筆重點指定修正為 D：由無線 AP 晶片直接將組播封包轉換為具備 ACK 確認的單播串流。" },
+      { id: 16, question: "You are proposing new CX 8360 VSX switches to replace a customer's existing core switches. The customer is concerned about the possibility of a split-brain scenario between the VSX pair.\nHow is the VSX pair affected when the ISL is down and keepalive is up?", options: [{key:"A",text:"The VSX pair is out-of-sync."},{key:"B",text:"The VSX pair nodes are still forwarding traffic."},{key:"C",text:"The VSX pair is not at risk."},{key:"D",text:"The VSX LAGs are in a degraded state."}], answer: "D", explanation: "依要求修正為 D：Secondary 主動 shutdown 其 VSX 成員埠以防腦裂，下游雙歸屬 VSX LAG 進入降級狀態。" },
+      { id: 17, question: "You need to ensure that voice traffic sent through an AOS-CX arrives with minimal latency.\nWhat is the best scheduling mechanism to use for this task?", options: [{key:"A",text:"Rate limiting"},{key:"B",text:"QoS shaping"},{key:"C",text:"Strict scheduling"},{key:"D",text:"DWRR scheduling"}], answer: "C", explanation: "Strict Priority Scheduling 永遠優先清空高優先級語音隊列，保證即時語音封包最低延遲。" },
+      { id: 18, question: "What are two advantages of splitting a larger OSPF area into a number of smaller areas? (Choose two.)", options: [{key:"A",text:"It reduces the total number of LSAs."},{key:"B",text:"It simplifies the configuration."},{key:"C",text:"It extends the LSDB."},{key:"D",text:"It increases stability."},{key:"E",text:"It reduces processing overhead."}], answer: ["A","E"], explanation: "劃分小型 OSPF Area 可大幅減少各區域內的 LSA 泛洪總量，並減少 SPF 運算對 CPU 與記憶體的負載。" },
+      { id: 19, isDiagram: true, diagram: TOPOLOGY_SVGS.q19, badge: "圖示設定題", question: "A company is in the planning stages to migrate all their wireless domain laptops from WPA2 EAP-PEAP to EAP-TLS with Machine Authentication. The administrator is testing a new Group Policy (GPO)... Windows laptops are unable to join the configured 'secure_wireless' SSID as shown below.\nWhich configuration setting would resolve this issue?", options: [{key:"A",text:"Specify authentication mode: User authentication"},{key:"B",text:"Security type: 802.1X with WEP"},{key:"C",text:"Choose a network authentication method: Microsoft: EAP-TTLS with Computer authentication"},{key:"D",text:"Choose a network authentication method: Microsoft: Smart Card or other certificate with Computer authentication"}], answer: "C", explanation: "依您確認修正為 C：選擇電腦憑證驗證模式。" },
+      { id: 20, isDrag: true, dragType: "order", badge: "拖曳配對題", question: "What is the order of operations for Key Management service for a wireless client roaming from AP1 to AP2?", slots: ["順序 1", "順序 2", "順序 3", "順序 4", "順序 5"], items: ["Client associates and authenticates to AP1", "Cache the client's information", "Get AP1 neighbor AP list", "Generate Pairwise Master Key keys for AP1's neighbors", "Share Pairwise Master Key along with VLAN and User Role to target APs"], correctMatches: ["Client associates and authenticates to AP1", "Cache the client's information", "Get AP1 neighbor AP list", "Generate Pairwise Master Key keys for AP1's neighbors", "Share Pairwise Master Key along with VLAN and User Role to target APs"], answer: "拖曳配對", explanation: "漫遊金鑰流程：AP1 認證 ➔ 快取客戶端資訊 ➔ 取得鄰居清單 ➔ 產生 PMK ➔ 將金鑰與 Role 預先分派給目標 AP。" },
+      { id: 21, question: "Your Director of Security asks you to assign AOS-CX switch management roles to new employees based on their specific job requirements.\nAfter the configuration was complete, it was noted that a user assigned with the administrator's role did not have the appropriate level of access on the switch.\nThe user was not limited to viewing nonsensitive configuration information and a level of 1 was not assigned to their role. Which default management role should have been assigned for the user?", options: [{key:"A",text:"sysops"},{key:"B",text:"auditors"},{key:"C",text:"config"},{key:"D",text:"operators"}], answer: "D", explanation: "operators 是 AOS-CX 最低權限（Level 1）的唯讀管理角色，僅能檢視非敏感組態。" },
+      { id: 22, question: "What is an OSPF transit network?", options: [{key:"A",text:"a network that uses tunnels to connect two areas"},{key:"B",text:"a network that connects to a different routing protocol"},{key:"C",text:"a special network that connects two different areas"},{key:"D",text:"a network on which a router discovers at least one neighbor"}], answer: "D", explanation: "OSPF Transit 網路指路由器能在該網段上發現至少一個鄰居，並承載穿越該網段的資料流量。" },
+      { id: 23, isDiagram: true, diagram: TOPOLOGY_SVGS.q23, badge: "圖示設定題", question: "A company with 1,471 employees has deployed 200 AP-635 access points. To take advantage of the 6 GHz band, the administrator has attempted to configure a new WPA3-OWE SSID in the HPE Aruba Networking Central but is not working as expected.\nWhat would be the correct action to fix the issue?", options: [{key:"A",text:"Change the SSID to WPA3-Enhanced Open."},{key:"B",text:"Change the SSID to WPA3-Personal."},{key:"C",text:"Change the SSID to WPA3-Enterprise (CNSA)."},{key:"D",text:"Change the SSID to WPA3-Enterprise (CCM)."}], answer: "A", explanation: "在 Aruba Central 與 AP 設定中，WPA3-OWE 的正式名稱為 WPA3-Enhanced Open。" },
+      { id: 24, question: "How do you allow a new VLAN 100 between VSX pair inter-switch-link 256 for port 1/45 and 2/45?", options: [{key:"A",text:"vlan trunk add 100 in LAG256"},{key:"B",text:"vlan trunk add 100 in MLAG256"},{key:"C",text:"vlan trunk allowed 100 for ports 1/45 and 1/46"},{key:"D",text:"vlan trunk allowed 100 in LAG256"}], answer: "D", explanation: "在 VSX ISL Trunk（預設 LAG 256）放行 VLAN 的標準語法為 vlan trunk allowed 100 in LAG256。" },
+      { id: 25, question: "When setting up an AOS-CX VSX pair, which information does the Inter-Switch Protocol synchronize in the configuration created?", options: [{key:"A",text:"RPVST+"},{key:"B",text:"SVI"},{key:"C",text:"UDLD"},{key:"D",text:"MSTP"}], answer: "D", explanation: "VSX Inter-Switch Protocol 同步項目包含 MSTP 全域配置與狀態。" },
+      { id: 26, question: "What is enabled by LLDP-MED?", options: [{key:"A",text:"Voice VLANs can be automatically configured for VoIP phones."},{key:"B",text:"GVRP VLAN information can be used to dynamically add VLANs to a trunk."},{key:"C",text:"iSCSI client devices can set the required MTU setting for the port."},{key:"D",text:"iSCSI client devices can request to have flow control enabled."}], answer: "A", explanation: "LLDP-MED 允許交換器自動辨識並向 VoIP 話機指派專屬語音 VLAN 與 QoS 參數。" },
+      { id: 27, question: "Refer to the output from a CX6100 switch:\nshow interface 1/1/51 transceiver detail\n... Rx Power (mW/dBm): 0.0001/-40.00\nRecent Alarms: Rx Power low alarm, Rx loss of signal ...\nWhat is the correct detail that can be observed from the output above?", options: [{key:"A",text:"The dBm values for Tx are too far away from 0, and the link is down."},{key:"B",text:"the dBm values for Rx are within acceptable values, and the link is up."},{key:"C",text:"The dBm values for Rx are too low, indicating that the link is down."},{key:"D",text:"The dBm values for Tx are too high and affect Rx signals."}], answer: "C", explanation: "光收功率為 -40.00 dBm 且出現 loss of signal 告警，代表光訊號微弱，鏈路中斷。" },
+      { id: 28, question: "What is true regarding 802.11k?", options: [{key:"A",text:"It extends radio measurements to define mechanisms for wireless network management of stations."},{key:"B",text:"It reduces roaming delay by pre-authenticating clients with multiple target APs before a client roams to an AP."},{key:"C",text:"It provides mechanisms for APs and clients to dynamically measure the available radio resources."},{key:"D",text:"It considers several metrics before it determines if a client should be steered to the 5GHz band, including client RSSI."}], answer: "C", explanation: "802.11k 規範了 AP 與客戶端動態測量射頻資源並回報鄰居 AP 清單的標準機制。" },
+      { id: 29, question: "In a CX 8325, how do you configure the IP address 10.10.10.1 for the interface in default state for interface SVI 100 access and port 1/1/1?", options: [{key:"A",text:"int vlan 100, ip address .1/24, int 1/1/1, switching, vlan access 100"},{key:"B",text:"int vlan 100, ip address 10.10.10.1/24, int 1/1/1 vlan access 100"},{key:"C",text:"int vlan 100, ip address .1/24, int 1/1/1. trunking, valn native 100"},{key:"D",text:"int vlan, ip address 10.10.10.1/24, int 1/1/1, no routing, vlan access 100"}], answer: "B", explanation: "AOS-CX 語法：進入 int vlan 100 宣告 IP，進入介面宣告 vlan access 100。" },
+      { id: 30, question: "Your customer currently has two (2) 5406 modular switches with MSTP configured as their core switches. You are proposing a new solution.\nWhat would you explain regarding the AOS-CX VSX switch pair when the Spanning-tree needs to be set up?", options: [{key:"A",text:"Enable vsx-peer stp-global in vsx mode to sync the configuration."},{key:"B",text:"Spanning-tree configuration is synced by default with VSX."},{key:"C",text:"Use vsx-sync in the MSTP region configuration to get synced."},{key:"D",text:"Enable vsx-sync stp-global in vsx mode to sync the configuration."}], answer: "D", explanation: "在 vsx 模式下輸入 vsx-sync stp-global 即可同步兩台交換器的生成樹配置。" },
+      { id: 31, question: "A customer has several hundred wireless loT devices and is looking for an authentication solution that meets the following requirements:\n-The wireless traffic between the loT devices and the Access Point must be encrypted\n-Unique passphrase per device\n-Use fingerprint information to perform role-based access\nWhich solution will address the customer's requirements? (Choose two.)", options: [{key:"A",text:"MPSK and an internal RADIUS server"},{key:"B",text:"MPSK Local with MAC Authentication"},{key:"C",text:"Local User Derivation Rules"},{key:"D",text:"HPE Aruba Networking ClearPass Policy Manager"},{key:"E",text:"MPSK Local with EAP-TLS"}], answer: ["A","D"], explanation: "MPSK 提供每台終端獨立專屬金鑰，搭配 ClearPass 提供指紋分析與動態角色賦予。" },
+      { id: 32, question: "A large retail client is looking to generate a rich set of contextual data based on the location information of wireless clients in their stores.\nWhich standard uses Round Trip Time (RTT) and Fine Time Measurements (FTM) to calculate the distance a client is from an AP?", options: [{key:"A",text:"802.11mc"},{key:"B",text:"802.11be"},{key:"C",text:"802.11v"},{key:"D",text:"802.11ah"}], answer: "A", explanation: "802.11mc 定義了 Wi-Fi RTT 與 FTM，實現公尺級室內高精準度測距定位。" },
+      { id: 33, question: "A customer has a large number of food-producing machines.\nAll machines are connected via CX 6200 switches in VLANs 100,110, and 120.\nSeveral external technicians are maintaining this special equipment.\nWhat are the correct commands to ensure that no rogue DHCP server will impact the network?", options: [{key:"A",text:"dhcpv4-snooping\nno dhcpv4-snooping option 82\nvlan 100\n name cornflakes\n dhcpv4-snooping\nvlan 110\n name cornmill\n dhcpv4-snooping\nvlan 120\n name packaging\n dhcpv4-snooping\ninterface lag 1\n no shutdown\n description Uplink-to-Core\n no routing\n vlan trunk native 1\n vlan trunk allowed all\n lacp mode active\n dhcpv4-snooping trust"},{key:"B",text:"dhcpv4-snooping all vlans..."},{key:"C",text:"dhcp snooping enable..."},{key:"D",text:"dhcp-snooping enable..."}], answer: "A", explanation: "AOS-CX 語法：全域與各 VLAN 啟用 dhcpv4-snooping，僅上聯 Uplink 設為 trust。" },
+      { id: 34, question: "You are configuring an SVI on an AOS-CX switch that needs to have the following characteristics:\nVLAN ID=25\nIPv4 address 10.105.43.1 with mask 255.255.255.0\nIPv6 address fd00:5708::f02d:4df6 with a 64 bit prefix length\nmember of VRF eng\nVRF eng and VLAN 25 have not yet been created\nWhich command lists will satisfy the requirements with the least number of commands?", options: [{key:"A",text:"vrf eng\nvlan 25\ninterface vlan 25\n ip address 10.105.43.1/24\n ipv6 address fd00:5708::f02d:4df6/64\n vrf attach eng"},{key:"B",text:"interface vlan 25 without vrf created"},{key:"C",text:"vrf eng\nvlan 25\ninterface vlan 25\n vrf attach eng\n ip address 10.105.43.1/24\n ipv6 address fd00:5708::f02d:4df6/64"},{key:"D",text:"ip address 255.255.255.0 syntax"}], answer: "C", explanation: "依實務規則修正為 C：AOS-CX 必須先執行 vrf attach eng 再設 IP，否則 IP 會被清空。" },
+      { id: 35, question: "A customer is using a legacy application that communicates at layer-2. The customer would like to keep this application working to a remote site connected via layer-3. All legacy devices are connected to a dedicated CX 6200 switch at each site.\nWhich technology on the CX 6200 could be used to meet this requirement?", options: [{key:"A",text:"Ethernet over IP (EoIP)"},{key:"B",text:"Static VXLAN"},{key:"C",text:"Generic Routing Encapsulation (GRE)"},{key:"D",text:"Inclusive Multicast Ethernet Tag (IMET)"}], answer: "B", explanation: "CX 6200 支援 Static VXLAN，可跨越 L3 網路封裝傳遞二層流量。" },
+      { id: 36, question: "Which statements are true regarding a VXLAN implementation on HPE Aruba Networking switches? (Choose two.)", options: [{key:"A",text:"VNIs encapsulate and decapsulate VXLAN traffic."},{key:"B",text:"All AOS-CX switches support VXLAN."},{key:"C",text:"They are only available for datacenter switches (CX, 8k, 9k, 10k)."},{key:"D",text:"VTEPs encapsulate and decapsulate VXLAN traffic."},{key:"E",text:"MTU size mute must be increased beyond the default."}], answer: ["D","E"], explanation: "VTEP 負責 VXLAN 封裝與解封裝；由於增加了外層標頭，底層網路必須調大 MTU。" },
+      { id: 37, question: "What is one advantage of using OCSP vs CRLs for certificate validation?", options: [{key:"A",text:"reduces latency between the time a certificate is revoked and validation reflects this status"},{key:"B",text:"higher availability for certificate validation"},{key:"C",text:"supports longer certificate validity periods"},{key:"D",text:"less complex to implement"}], answer: "A", explanation: "OCSP 提供即時在線憑證吊銷查詢，避免 CRL 下載週期的延遲空窗。" },
+      { id: 38, question: "A customer wants to deploy a Gateway and take advantage of all SD-WAN features. Which persona role option should be selected?", options: [{key:"A",text:"AOS 10 Wireless"},{key:"B",text:"AOS 10 Mobility"},{key:"C",text:"AOS 10 VPN Concentrator"},{key:"D",text:"AOS 10 Branch"}], answer: "D", explanation: "AOS 10 Branch 角色提供動態路徑選擇與 WAN 優化等全套 SD-WAN 功能。" },
+      { id: 39, question: "Which feature allows the device to remain operational when a remote link failure occurs between a Gateway cluster and a RADIUS server that is either in the cloud or a datacenter?", options: [{key:"A",text:"MAC Authentication"},{key:"B",text:"Authentication survivability"},{key:"C",text:"MAC caching"},{key:"D",text:"Opportunistic key caching"}], answer: "B", explanation: "Authentication Survivability 允許網關在 RADIUS 斷線時於本地維持認證存活。" },
+      { id: 40, question: "A customer wants to enable wired authentication across all their CX switches. One of the requirements is that the switch must be able to authenticate a single computer connected through a VoIP phone.\nWhich feature should be enabled to support this requirement?", options: [{key:"A",text:"Device-Based Mode"},{key:"B",text:"Multi-Domain Authentication"},{key:"C",text:"Multi-Auth Mode"},{key:"D",text:"MAC Authentication"}], answer: "B", explanation: "MDA（多域認證）支援同一連接埠獨立對數據域（PC）與語音域（電話）進行驗證。" },
+      { id: 41, question: "A customer is using HPE Aruba Networking Cloud Guest, but visitors keep complaining that the captive portal page keeps coming up after devices go to sleep.\nWhich solution should be enabled to deal with this issue?", options: [{key:"A",text:"MAC Caching under the user-role"},{key:"B",text:"MAC Caching under the WLAN"},{key:"C",text:"MAC Caching under the splash page"},{key:"D",text:"Wireless Caching under the splash page"}], answer: "C", explanation: "在 Splash Page 設定中啟用 MAC Caching，設備喚醒後免重複輸入認證。" },
+      { id: 42, question: "Your CX 6300 VSF stack has OSPF adjacency over SVI 10 with LAG 1 to a neighboring device. The following configuration was created on the switch:\nvlan 20,30,40\ninterface vlan 20/30/40 ...\nWhat needs to be done to advertise the newly created networks using OSPF without forming new adjacencies?", options: [{key:"A",text:"#interface vlan 20,30,40\n# ip ospf 1 area 0\n#no ip ospf passive-interface"},{key:"B",text:"#interface vlan 20,30,40\n# ip ospf 1 area 0\n# ip ospf passive-interface"},{key:"C",text:"#interface vlan 20,30,40\n# ip ospf passive-interface"},{key:"D",text:"#interface vlan 20,30,40\n#no ip ospf passive-interface"}], answer: "C", explanation: "確認答案為 C：將介面指定為 passive-interface 即可宣告網段而不建立鄰居。" },
+      { id: 43, question: "A network administrator is troubleshooting some issues guest users are having when connecting and authenticating to the network. The access switches are AOS-CX switches.\nWhat command should the administrator use to examine information on which role the guest user has been assigned?", options: [{key:"A",text:"diag-dump captiveportal client verbose"},{key:"B",text:"show aaa authentication port-access interface all client-status"},{key:"C",text:"show port-access captiveportal profile"},{key:"D",text:"show port-access role"}], answer: "B", explanation: "此指令可完整檢視所有埠上已認證客戶端詳情及被指派的角色。" },
+      { id: 44, question: "A customer is using a legacy application that communicates at layer-2. The customer would like to keep this application working across the campus, which is connected via layer-3. The legacy devices are connected to CX 6300 switches throughout the campus.\nWhich technology minimizes flooding so the legacy application can work efficiently?", options: [{key:"A",text:"Ethernet over IP (EoIP)"},{key:"B",text:"Generic Routing Encapsulation (GRE)"},{key:"C",text:"Static VXLAN"},{key:"D",text:"EVPN-VXLAN"}], answer: "D", explanation: "EVPN-VXLAN 利用 BGP 控制面發布 MAC 位址，將泛洪轉化為精準單播。" },
+      { id: 45, isDiagram: true, diagram: TOPOLOGY_SVGS.q45, badge: "拓撲分析題", question: "Review the exhibit.\nYou are troubleshooting an issue with a 10.102.39.0/24 subnet, which is also VLAN 1000 used for wireless clients on a pair of CX 8360 switches. The subnet SVI is configured on the CX 8360 pair, and the DHCP server is a Microsoft Windows Server 2022 Standard with an IP address of 10.200.1.100. The 10.102.250.0/24 subnet is used for switch management.\nA large number of DHCP requests are failing. You are observing sporadic DHCP behavior across clients attached to the CX 6100 switch.\nWhich action may help fix the issue?", options: [{key:"A",text:"Enter the following commands on the VSX primary switch:\nVSX\nvsx-sync dhcp-relay\nexit"},{key:"B",text:"Add an SVI in the 10.102.39.0/24 subnet on the CX 6100 switch that the APs are connected to."},{key:"C",text:"Enter the following commands on the VSX secondary switch:\nvlan 1000\nip relay-address 10.200.1.100\nexit"},{key:"D",text:"Enter the following commands on the Aruba CX 6100 switch:\ninterface vlan 1000\nip helper-address 10.200.1.100\nexit"}], answer: "A", explanation: "在 Primary 啟用 vsx-sync dhcp-relay 確保雙機具有一致的 DHCP Relay 設定。" },
+      { id: 46, question: "A network engineer recently identified that a wired device connected to a CX switch is misbehaving on the network. To address this issue, a new HPE Aruba Networking ClearPass policy has been put in place to prevent this device from connecting to the network again.\nWhich two steps need to be implemented to allow ClearPass to perform a CoA and change the access for this wired device? (Choose two.)", options: [{key:"A",text:"Confirm that NTP is configured on the switch and ClearPass."},{key:"B",text:"Use Dynamic Segmentation."},{key:"C",text:"Bounce the switchport."},{key:"D",text:"Configure dynamic authorization on the switchport."},{key:"E",text:"Configure dynamic authorization on the switch."}], answer: ["A","E"], explanation: "依要求修正為 A, E：CoA 強制校驗時間戳記（NTP）且交換機全域需啟用動態授權。" },
+      { id: 47, question: "What steps are part of the Key Management workflow when a wireless device is roaming from AP1 to AP2? (Choose two.)", options: [{key:"A",text:"AP1 will cache the client's information and send it to the Key Management service."},{key:"B",text:"The Key Management service receives a list of all AP1's neighbors from AirMatch."},{key:"C",text:"The Key Management service receives from AirMatch a list of all AP2's neighbors."},{key:"D",text:"A client associates and authenticates with the AP2 after roaming from AP1."},{key:"E",text:"The Key Management service then generates R1 keys for AP2's neighbors."}], answer: ["A","D"], explanation: "AP1 快取客戶端憑證送往金鑰管理服務，漫遊完成後客戶端與 AP2 完成關聯認證。" },
+      { id: 48, isDiagram: true, diagram: TOPOLOGY_SVGS.q48, badge: "拓撲分析題", question: "Two AOS-CX switches are configured with VSX at the Access-Aggregation layer, where servers attach to them. An SVI interface is configured for VLAN 10 and serves as the default gateway for VLAN 10. The ISL link between the switches fails, but the keepalive interface functions. Active gateway has been configured on the VSX switches.\nWhat is correct about access from the servers to the Core? (Choose two.)", options: [{key:"A",text:"Server 2 can access the core layer via the keepalive link."},{key:"B",text:"Server 1 can access the core layer via both uplinks."},{key:"C",text:"Server 1 can access the core layer via the keepalive link."},{key:"D",text:"Server 1 and Server 2 can communicate with each other via the core layer."},{key:"E",text:"Server 1 can access the core layer on only one uplink."},{key:"F",text:"Server 2 cannot access the core layer."}], answer: ["E","F"], explanation: "Secondary 關閉下聯防腦裂，Server 2 無法上聯 Core；Server 1 僅能透過 Primary 上聯。" },
+      { id: 49, isDiagram: true, diagram: TOPOLOGY_SVGS.q49, badge: "圖示拓撲題", question: "In AOS-10, which session-based ACL below will only allow ping from any wired station to wireless clients but will not allow ping from wireless clients to wired stations? The wired host ingress traffic arrives on a trusted port.", options: [{key:"A",text:"ip access-list session pingFromWired\nany any svc-icmp deny\nany user svc-icmp permit"},{key:"B",text:"ip access-list session pingFromWired\nuser any svc-icmp deny\nany any svc-icmp permit"},{key:"C",text:"ip access-list session pingFromWired\nany user any permit"},{key:"D",text:"ip access-list session pingFromWired\nany any svc-icmp permit\nuser any svc-icmp deny"}], answer: "B", explanation: "依您畫面紅色螢光筆指定修正為 B：阻斷 user 發起的 ICMP，允許反向回應放行。" },
+      { id: 50, question: "Which statement best describes QoS?", options: [{key:"A",text:"Determining which traffic passes specified quality metrics"},{key:"B",text:"Identifying specific traffic for special treatment"},{key:"C",text:"Scoring traffic based on the quality of the contents"},{key:"D",text:"Identifying the quality of the connection"}], answer: "B", explanation: "QoS 的核心本質是識別特定業務流量並提供差異化的排隊與轉發策略。" },
+      { id: 51, question: "In an AOS-10 architecture using an AP, a gateway and traffic forwarding mode = mixed, what happens when a client connects to an open enhanced SSID where their VLAN assignment will be bridged?", options: [{key:"A",text:"Authenticated Diffie-Hellman is not utilized"},{key:"B",text:"The gateway will not respond."},{key:"C",text:"No encryption is applied."},{key:"D",text:"RADIUS protocol is utilized."}], answer: "B", explanation: "本地橋接（Bridged）模式流量直接於 AP 本地轉發，閘道器不會介入回應。" },
+      { id: 52, question: "Which network components communicate using the RADIUS protocol for authentication and accounting?", options: [{key:"A",text:"an access point and the endpoint device"},{key:"B",text:"an endpoint device and a RADIUS authentication server"},{key:"C",text:"a Network Access Server and an endpoint device"},{key:"D",text:"a Network Access Server and a RADIUS authentication server"}], answer: "D", explanation: "RADIUS 協定運行於網路存取伺服器（NAS，如 AP/交換機）與 RADIUS 認證伺服器之間。" },
+      { id: 53, question: "Which statements are true about VSX LAG? (Choose two.)", options: [{key:"A",text:"LAG traffic is passed over VSX ISL links only when upgrading firmware on the switch pair."},{key:"B",text:"The total number of configured links may not exceed 8 for the pair or 4 per switch."},{key:"C",text:"Outgoing traffic is preferentially switched to local members of the LAG."},{key:"D",text:"Up to 255 VSX LAGs can be configured on all 83xx and 84xx model switches."},{key:"E",text:"Outgoing traffic is switched a port based on a hashing algorithm which may be either switch in the pair."}], answer: ["C","D"], explanation: "VSX LAG 優先本地轉發以節省 ISL 頻寬，83xx/84xx 系列支援高達 255 組 VSX LAG。" },
+      { id: 54, question: "You are troubleshooting an issue with a pair of Aruba CX 8360 switches configured with VSX. Each switch has multiple VRFs. You need to find the IP address of a particular client device with a known MAC Address. You run the \"show arp\" command on the primary switch in the pair but do not find a matching entry for the client MAC address.\nThe client device is connected to an CX 6100 switch by VSX LAG.\nWhich action can be used to find the IP address successfully?", options: [{key:"A",text:"Run the following command on the CX 6100 switch:\nshow arp all-vrfs"},{key:"B",text:"Run the following command on the VSX primary switch:\nshow mac-address-table"},{key:"C",text:"Run the following command on the VSX secondary switch:\nshow arp summary"},{key:"D",text:"Run the following command on the VSX primary switch:\nshow arp all-vrfs"}], answer: "D", explanation: "【已確認修正為 D】二層交換器 CX 6100 不支援 VRF 也沒有全網 ARP 快取；在具備三層路由能力的 VSX Primary 核心交換機上執行 show arp all-vrfs 才能跨所有 VRF 查得該終端的 IP 位址。" },
+      { id: 55, question: "A customer is using stacked CX 6200 and CX 6300 switches for access and a VSX pair of CX 8325 as a collapsed core.802.1X is implemented for authentication. Due to the lack of cabling, some unmanaged switches are still in use. Sometimes devices behind these switches cause network outages. The switch should send a warning to the helpdesk when the problem occurs. You have been asked to implement an effective solution to the problem.\nWhat is the solution for this?", options: [{key:"A",text:"Configure loop protection on all edge ports of the CX 6200 and CX 6300 switches\nSet up the trap-option"},{key:"B",text:"Configure loop guard on all edge ports of the CX 6200 and CX 6300 switches\nSet up the trap-option"},{key:"C",text:"Configure spanning tree on the CX 8325 switches\nSet the trap-option"},{key:"D",text:"Configure spanning tree on the CX 6200 and CX 6300 switches\nNo trap option is needed"}], answer: "A", explanation: "在接入邊界埠啟用 loop protection 並配置 SNMP trap，可阻斷迴圈並即時告警。" },
+      { id: 56, question: "A new network design is being considered to minimize client latency in a high-density environment. The design needs to do this by eliminating contention overhead by dedicating subcarriers to clients.\nWhich technology is the best match for this use case?", options: [{key:"A",text:"Channel Bonding"},{key:"B",text:"OFDMA"},{key:"C",text:"WMM"},{key:"D",text:"MU-MIMO"}], answer: "B", explanation: "OFDMA 將無線信道劃分為正交子載波（RU），允許多終端併發傳輸消除爭用。" },
+      { id: 57, question: "Which two statements regarding HPE Aruba Networking Network Analytics Engine (NAE) agents are true? (Choose two.)", options: [{key:"A",text:"A single NAE agent can be used by multiple NAE scripts."},{key:"B",text:"A single NAE script can be used my multiple NAE agents."},{key:"C",text:"NAE scripts must be reviewed and signed by HPE Aruba Networking before being used."},{key:"D",text:"NAE agents will never consume more than 10% of switch processor resources."},{key:"E",text:"NAE agents are active at all times."}], answer: ["A","B"], explanation: "NAE 具備彈性架構，Script 與 Agent 之間具備一對多與多對一的重用關係。" },
+      { id: 58, question: "A company with 10, 281 employees recently deployed new HPE Aruba Networking Access Points at different branch offices. Wireless 802.1X authentication will be against a RADIUS server in the cloud. The security team is concerned that the traffic between the AP and the RADIUS server will be exposed.\nWhat is the appropriate solution for this scenario?", options: [{key:"A",text:"Enable IPSec under Data Handling in HPE Aruba Networking Central"},{key:"B",text:"Enable EAP-TTLS on all wireless devices."},{key:"C",text:"Configure RadSec on the AP and the RADIUS server."},{key:"D",text:"Enable EAP-TLS on all wireless devices."}], answer: "C", explanation: "RadSec（RADIUS over TLS）將認證封包於 TLS 隧道中加密，確保雲端傳輸安全。" },
+      { id: 59, question: "You are configuring Policy Based Routing (PBR) for a subnet that will be used to test a new default route for your network. Traffic originating from 10.2.250.0/24 should use a new default route to 10.1.1.253. Other non-default routes for this subnet should not be affected by this change.\nWhat are two parts of the solution for these requirements? (Choose two.)", options: [{key:"A",text:"class ip test_subnet 10 match any 10.2.250.0 255.255.255.0 any, policy def_route_test_policy routed-out"},{key:"B",text:"pbr-action-list def_route_test default-nexthop 10.1.1.253/24"},{key:"C",text:"pbr-action-list def_route_test nexthop 10.1.1.253 interface null"},{key:"D",text:"class ip test_subnet\n 10 match any 10.2.250.0/24 any\npolicy def_route_test_policy\n 10 class ip test_subnet action pbr def_route_test\ninterface vlan 100\n ip address 10.2.250.0/24\n apply policy def_route_test_policy routed-in"},{key:"E",text:"pbr-action-list def_route_test\n default-nexthop 10.1.1.253\n interface null"}], answer: ["D","E"], explanation: "正確定義 PBR 類別並在 routed-in 方向生效，並宣告包含 default-nexthop 的動作清單。" },
+      { id: 60, question: "An AOS-10 Gateways, which device persona is only available when configuring a Gateway-only group?", options: [{key:"A",text:"Edge"},{key:"B",text:"Branch"},{key:"C",text:"Mobility"},{key:"D",text:"VPN Concentrator"}], answer: "D", explanation: "VPN Concentrator（VPNC）是唯有在純網關群組中才能選取的專屬角色。" },
+      { id: 61, question: "Which method is used to onboard a new HPE Aruba Networking User Experience Insight (UXI) in an existing environment with 802.1X authentication? (The sensor has no cellular connection.)", options: [{key:"A",text:"Use the HPE Aruba Networking installer app on your smartphone to scan the barcode."},{key:"B",text:"Connect the new UXI from an already installed one and adjust the initial configuration."},{key:"C",text:"Use the CLI via the serial cable and adjust the initial configuration."},{key:"D",text:"Use the UXI app on your smartphone and connect the UXI via Bluetooth."}], answer: "A", explanation: "使用手機端 Aruba Installer App 掃描感測器條碼即可快速配置並完成入網。" },
+      { id: 62, question: "You are helping an onsite network technician bring up an HPE Aruba Networking 9004 gateway with ZTP for a branch office. The technician was told to plug in any port for the ZTP process to start.\nThirty minutes after the gateway was plugged in, new users started to complain they were no longer able to get to the internet. One user who reported the issue stated their IP address is 172.16.0.81. However, the branch office network is supposed to be on 10.231.81.0/24.\nWhat should the technician do to alleviate the issue and get the ZTP process started correctly?", options: [{key:"A",text:"Move the cable on the gateway to G0/0/1, and add the device's MAC and Serial number in HPE Aruba Networking Central."},{key:"B",text:"Factory default and reboot the gateway to restart the process."},{key:"C",text:"Turn off the DHCP scope on the gateway, and set DNS correctly on the gateway to reach HPE Aruba Networking Activate."},{key:"D",text:"Move the cable on the gateway from port G0/0/1 to port G0/0/0."}], answer: "D", explanation: "9004 網關預設 WAN/ZTP 介面為 G0/0/0，插錯為 LAN 埠會導致本地網段遭配發 IP。" },
+      { id: 63, question: "A company deployed Dynamic Segmentation with their CX switches and gateways. After performing a security audit on their network discovered that the tunnels built between the CX switch and the HPE Aruba Networking gateway are not encrypted. The company is concerned that bad actors could try to insert spoofed messages on the gateway to disrupt communications or obtain information about the network.\nWhich action must the administrator perform to address this situation?", options: [{key:"A",text:"Enable Enhanced security"},{key:"B",text:"Enable Secure Mode Enhanced"},{key:"C",text:"Enable Enhanced PAPI security"},{key:"D",text:"Enable GRE security"}], answer: "B", explanation: "啟用 Secure Mode Enhanced 可為動態微隔離穿隧的控制面與數據面提供全面加密。" },
+      { id: 64, question: "Describe the difference between Class of Service (CoS) and Differentiated Services Code Point (DSCP).", options: [{key:"A",text:"CoS has much finer granularity than DSCP."},{key:"B",text:"They are similar and can be used interchangeably."},{key:"C",text:"CoS is only used to determine CLASS of traffic. DSCP is used only to differentiate between different Classes."},{key:"D",text:"CoS is only contained in VLAN Tag fields. DSCP is in the IP Header and preserved throughout the IP packet flow."}], answer: "D", explanation: "CoS 位於二層 802.1Q 標籤中，DSCP 位於三層 IP 標頭中，可跨路由端到端保留。" },
+      { id: 65, question: "A network administrator is attempting to troubleshoot a connectivity issue between a group of users and a particular server. The administrator needs to examine the packets over a period of time from their desktop; however, the administrator is not directly connected to the AOS-CX switch involved with the traffic flow.\nWhat statements are correct regarding the ERSPAN session that needs to be established on an AOS-CX switch? (Choose two.)", options: [{key:"A",text:"On the source AOS-CX switch, the destination specified is the switch to which the administrator's desktop is connected."},{key:"B",text:"The encapsulation protocol used is VXLAN."},{key:"C",text:"On the source AOS-CX switch, the destination specified is the administrator's desktop."},{key:"D",text:"The encapsulation protocol used is GRE."},{key:"E",text:"The encapsulation protocol is UDP."}], answer: ["C","D"], explanation: "ERSPAN 採用 GRE 封裝鏡像封包，可跨三層直接將封包送達管理員桌機 IP。" },
+      { id: 66, isDrag: true, dragType: "match", badge: "拖曳配對題", question: "Select the HPE Aruba Networking stacking technology matching each option. (Option may be used more than once or not at all.)", slots: ["Supports up to 10 devices per stack", "Supports two devices per stack", "Individual ISL links up to 400G are supported", "Individual ISL links up to 50G are supported", "A maximum aggregate ISL bandwidth of 200G is supported"], items: ["VSF", "VSX"], isMultiUse: true, correctMatches: ["VSF", "VSX", "VSX", "VSF", "VSF"], answer: "拖曳配對", explanation: "VSF：最多10台、50G ISL、200G聚合；VSX：雙機架構、400G ISL。" },
+      { id: 67, question: "The administrator notices that wired guest users that have exceeded their bandwidth limit are not being disconnected. Access Tracker in HPE Aruba Networking ClearPass indicates a disconnected CoA message is being sent to the AOS-CX switch.\nAn administrator has performed the following configuration:\n... radius dyn-authorization client ... vrf mgmt\n... radius dyn-authorization enable\nWhat is the most likely cause of this issue?", options: [{key:"A",text:"Change of Authorization has not been globally enabled on the switch."},{key:"B",text:"There is a time difference between the switch and the ClearPass Policy Manager."},{key:"C",text:"The SSL certificate for CPPM has not been added as a trust point on the switch."},{key:"D",text:"There is a mismatch between the RADIUS secret on the switch and CPPM."}], answer: "A", explanation: "交換機必須全域輸入 radius dyn-authorization enable 才會處理 CoA 請求。" },
+      { id: 68, question: "What are the requirements to ensure that WMM is working effectively? (Choose two.)", options: [{key:"A",text:"All APs need to be from the AP-5xx series and AP-6xx series which are Wi-Fi CERTIFIED 6."},{key:"B",text:"The AP needs to be connected via a tagged VLAN to the wired port."},{key:"C",text:"The Client must be Wi-Fi CERTIFIED for WMM and configured for WMM marking."},{key:"D",text:"The APs and the controller are Wi-Fi CERTIFIED for WMM, which is enabled."},{key:"E",text:"The AOS-10 APs installed have to be converted to controlled mode."}], answer: ["C","D"], explanation: "WMM 需要客戶端與 AP/控制器雙方皆支援且啟用 WMM 標記與優先佇列。" },
+      { id: 69, question: "What is the best practice for handling voice traffic with dynamic segmentation on AOS-CX switches?", options: [{key:"A",text:"Switch authentication and local forwarding of the voice traffic."},{key:"B",text:"Central authentication and port-based tunneling of the voice traffic."},{key:"C",text:"Switch authentication and user-based tunneling of the voice traffic."},{key:"D",text:"Controller authentication and port-based tunneling of all traffic."}], answer: "A", explanation: "依原廠語音最佳實踐修正為 A：語音流量採本地轉發（Local Forwarding）以保證最低延遲。" },
+      { id: 70, question: "A customer wants to provide wired security as close to the source as possible. The wired security must meet the following requirements:\n-allow ping from the IT management VLAN to the user VLAN\n-deny ping sourcing from the user VLAN to the IT management VLAN\nThe customer is using CX 6300s.\nWhat is the correct way to implement these requirements?", options: [{key:"A",text:"Apply an outbound ACL on the user VLAN denying icmp echo traffic toward the IT management VLAN."},{key:"B",text:"Apply an outbound ACL on the user VLAN allowing icmp echo-reply traffic toward the IT management VLAN."},{key:"C",text:"Apply an inbound ACL on the user VLAN denying icmp echo traffic toward the IT management VLAN."},{key:"D",text:"Apply an inbound ACL on the user VLAN allowing icmp echo-reply traffic toward the IT management VLAN."}], answer: "C", explanation: "在 User VLAN 進入（Inbound）方向阻斷發往 IT 網段的 ICMP Echo，即可就近防禦。" },
+      { id: 71, question: "Using HPE Aruba Networking best practices, what should be enabled for visitor networks where encryption is needed but authentication is not required?", options: [{key:"A",text:"Wired Equivalent Privacy"},{key:"B",text:"Opportunistic Wireless Encryption"},{key:"C",text:"Open Authentication mode"},{key:"D",text:"Wi-Fi Protected Access 3 Personal"}], answer: "B", explanation: "OWE（WPA3-Enhanced Open）為開放訪客網路提供免憑證的空中傳輸加密保護。" },
+      { id: 72, question: "The customer needs a network hardware refresh to replace an aging 5406R core switch pair using spanning tree configuration with CX 8360-32YC switches.\nWhat is the benefit of VSX clustering with the new solution?", options: [{key:"A",text:"a dual control plane provides better resiliency"},{key:"B",text:"dual HPE Aruba Networking AP LAN port connectivity for PoE redundancy"},{key:"C",text:"faster MSTP converge processing"},{key:"D",text:"stacked data-plane"}], answer: "A", explanation: "VSX 具備獨立的雙控制平面（Dual Control Plane），消除了單點故障風險。" },
+      { id: 73, question: "Your customer is interested in hearing more about how roles can help keep consistent policy enforcement in a distributed overlay fabric.\nHow would you explain this concept to them?", options: [{key:"A",text:"Role-based policies are tied to IP addresses which have an advantage over IP-based policies and role names are sent between VTEPs."},{key:"B",text:"Role-based policies enhance User Based Tunneling across the campus network and the policy traffic is protected with IPsec."},{key:"C",text:"Group Based Policy ID is applied on ingress VTEP after device authentication and policy is enforced on egress VTEP."},{key:"D",text:"Group Based Policy ID is applied on egress VTEP after device authentication and policy is enforced on ingress VTEP."}], answer: "C", explanation: "微隔離策略在 Ingress VTEP 封裝 GBP 標籤，並於 Egress VTEP 進行端點安全策略強制執行。" },
+      { id: 74, question: "Due to a shipping error, five (5) HPE Aruba Networking AP-515s and one (1) CX 6300 were sent directly to your new branch office. You have configured a new group persona for the new branch office devices in HPE Aruba Networking Central, but you do not know their MAC address or serial numbers. The office manager is instructed via text message on their smartphone to onboard all the new hardware into Aruba Central.\nWhat application must the office manager use on their phone to complete this task?", options: [{key:"A",text:"HPE Aruba Networking Onboard App"},{key:"B",text:"HPE Aruba Networking CX Mobile App"},{key:"C",text:"HPE Aruba Networking Installer App"},{key:"D",text:"HPE Aruba Networking Central App"}], answer: "C", explanation: "Aruba Installer App 可供現場工程師透過掃描包裝條碼快速完成入網。" },
+      { id: 75, question: "Your customer has asked you to assign a switch management role for a new user. The customer requires the user role to only have Web Ul access to the System > Log page and only have access to the GET method for REST API for the /logs/event resource.\nWhich default AOS-CX user role meets these requirements?", options: [{key:"A",text:"operators"},{key:"B",text:"administrators"},{key:"C",text:"auditors"},{key:"D",text:"sysops"}], answer: "C", explanation: "auditors 角色專職稽核，僅允許查閱系統日誌相關資源。" },
+      { id: 76, question: "With the CX 6000 48G switch with uplinks of 1/1/51 and 1/1/52, what does the switch do when a client port detects a loop and tx-rx-disable parameter is used?", options: [{key:"A",text:"The ports that confirmed the loop are disabled."},{key:"B",text:"The ports that transmitted and received the loop are disabled."},{key:"C",text:"The port that received the loop is disabled."},{key:"D",text:"The port that transmitted the loop is disabled."}], answer: "B", explanation: "tx-rx-disable 參數會在檢測到環路時同時關閉發送（TX）與接收（RX）的連接埠。" },
+      { id: 77, question: "You must ensure the HPE Aruba Network you are configuring for a client is capable of plug-and-play provisioning of access points. What enables this capacity?", options: [{key:"A",text:"SRTP"},{key:"B",text:"LLDP-MED"},{key:"C",text:"UCC Service"},{key:"D",text:"CSMA"}], answer: "C", explanation: "依您畫面螢光筆重點指定修正為 C：UCC Service。" },
+      { id: 78, question: "How Multicast Transmission Optimization implemented in an HPE Aruba Networking wireless network?", options: [{key:"A",text:"The optimal rate for sending multicast frames is based on the highest unicast rate across all associated clients."},{key:"B",text:"When this option is enabled the multicast traffic can be sent to a maximum rate of 24 Mbps."},{key:"C",text:"When this option is enabled the multicast traffic can be sent to a maximum rate of 48 Mbps."},{key:"D",text:"The optimal rate for sending multicast frames is based on the highest latency across all associated clients."}], answer: "B", explanation: "開啟組播優化可將組播傳輸速率提升至上限 24 Mbps，避免佔用空中傳輸時間。" },
+      { id: 79, isDrag: true, dragType: "match", badge: "拖曳配對題", question: "Match the ESP component of an AOS-10 tunneled mode setup between an AP and a Gateway to the listed security terminology. (Options may be used more than once or not at all.)", slots: ["Access Point", "Access Point and Gateway", "Device Designated Gateway", "Overlay Tunnel Orchestrator"], items: ["Authenticator", "Negotiate IPsec Phase1", "Negotiate IPsec Phase 2", "RADIUS proxy"], correctMatches: ["Authenticator", "Negotiate IPsec Phase1", "Negotiate IPsec Phase 2", "RADIUS proxy"], answer: "拖曳配對", explanation: "AP 擔任認證器；AP 與 GW 協商 Phase 1；DDG 協商 Phase 2；Orchestrator 代理 RADIUS。" },
+      { id: 80, question: "Your customer is having issues with Wi-Fi 6 clients remaining connected to poor-performing APs when less utilized APs offering better SNR are available.\nWhich technology should you implement?", options: [{key:"A",text:"HPE Aruba Networking ClientMatch"},{key:"B",text:"HPE Aruba Networking AirMatch"},{key:"C",text:"HPE Aruba Networking Adaptive Radio Management"},{key:"D",text:"HPE Aruba Networking ClearPass"}], answer: "A", explanation: "ClientMatch 專利技術可動態引導弱信號終端漫遊至最佳 AP，解決粘滯客戶端問題。" },
+      { id: 81, question: "Your customer has asked you to assign a switch management role for a new user. The customer requires the user role to view nonsensitive switch configuration information and only has the GET method for REST API for all resources other than \\login and \\logout.\nWhich default AOS-CX user role meets these requirements?", options: [{key:"A",text:"sysops"},{key:"B",text:"config"},{key:"C",text:"sysadmin"},{key:"D",text:"operators"}], answer: "D", explanation: "operators 是唯讀非敏感資料的角色。" },
+      { id: 82, question: "You are doing tests in your lab and with the following equipment specifications:\nAP1 has a radio that generates a 16 dBm signal.\nAP2 has a radio that generates a 13 dBm signal.\nAP1 has an antenna with a gain of 8 dBi.\nAP2 has an antenna with a gain of 12 dBi.\nThe antenna cable for AP1 has a 4 dB loss.\nThe antenna cable for AP2 has a 3 dB loss.\nWhat would be the calculated Equivalent Isotropic Radiated Power (EIRP) for AP1?", options: [{key:"A",text:"20 dBm"},{key:"B",text:"-1 dBm"},{key:"C",text:"15 dBm"},{key:"D",text:"-9dBm"}], answer: "A", explanation: "EIRP = 16 + 8 - 4 = 20 dBm。" },
+      { id: 83, question: "How is Dynamic Multicast Optimization (DMO) implemented in an HPE Aruba Networking wireless network?", options: [{key:"A",text:"DMO is configured globally for each SSID in use in the network."},{key:"B",text:"DMO is configured individually for each SSID in use in the network."},{key:"C",text:"The controller converts multicast streams into unicast streams."},{key:"D",text:"The AP uses QoS to provide equal air time for multicast traffic."}], answer: "C", explanation: "集中架構下由控制器將組播轉單播以提供傳輸確認。" },
+      { id: 84, question: "You are proposing new CX 8360 VSX switches to replace a customer's existing core switches. The customer is concerned about the possibility of a split-brain scenario between the VSX pair.\nHow is the VSX pair affected when the ISL is down and keepalive is down?", options: [{key:"A",text:"The VSX node with lower system-id continues forwarding."},{key:"B",text:"Both VSX nodes will automatically reboot and keep LAG interfaces shutdown."},{key:"C",text:"Both VSX nodes will still forward traffic."},{key:"D",text:"The VSX node with higher uptime continues forwarding."}], answer: "C", explanation: "依要求修正為 C：兩端皆判定對端斷線，雙機皆維持轉發（引發 Split-brain 雙活現象）。" },
+      { id: 85, question: "Your manufacturing client is deploying twenty headless scanners in their warehouse. These new devices do not support 802.1X authentication.\nHow does the gateway determine the device's role and VLAN derivation-rules when using MPSK Local?", options: [{key:"A",text:"From the Type-Length-Value based on the Aruba-MPSK-Key-Name."},{key:"B",text:"It pulls the device roles from HPE Aruba Networking Central during deployment."},{key:"C",text:"From the device's Calling-Station-ID in the RADIUS Access-Request."},{key:"D",text:"From the MPSK roles defined in HPE Aruba Networking Central's security dashboard."}], answer: "A", explanation: "MPSK Local 是透過封包中的 Aruba-MPSK-Key-Name (TLV) 屬性來衍生角色與 VLAN。" },
+      { id: 86, question: "When setting up an AOS-CX VSX pair, which information does the Inter-Switch Link Protocol configuration use in the configuration created?", options: [{key:"A",text:"dead interval is disabled by default"},{key:"B",text:"dead interval is based on the value set for hello interval"},{key:"C",text:"dead interval is 200ms by default"},{key:"D",text:"dead interval is 20s by default"}], answer: "D", explanation: "VSX ISL 的預設 Dead Interval 為 20 秒。" },
+      { id: 87, question: "Which feature supported by SNMPv3 provides an advantage over SNMPv2c?", options: [{key:"A",text:"Community strings"},{key:"B",text:"GetBulk"},{key:"C",text:"Encryption"},{key:"D",text:"Transport mapping"}], answer: "C", explanation: "SNMPv3 支援資料酬載加密（Encryption），徹底防範竊聽。" },
+      { id: 88, question: "How do you allow a new VLAN 200 for downstream access switch with VSX pair using VSX LAG?", options: [{key:"A",text:"vlan trunk allowed 200 in MLAG 1"},{key:"B",text:"vlan trunk add 100 in MLAG1"},{key:"C",text:"vlan trunk allowed in all LAG 1 multi-chassis"},{key:"D",text:"vlan trunk add 100 in LAG1 multi-chassis"}], answer: "A", explanation: "在跨機聚合介面 MLAG 1 上放行 VLAN 200。" },
+      { id: 89, question: "Which component is used by the HPE Aruba Networking Network Analytics Engine (NAE)?", options: [{key:"A",text:"Current State Database"},{key:"B",text:"Swift-based scripts"},{key:"C",text:"Firebase Realtime Database"},{key:"D",text:"Apache Cassandra"}], answer: "A", explanation: "NAE 核心運作依賴 AOS-CX 的 Current State Database (CSDB) 即時狀態庫。" },
+      { id: 90, question: "You need to have different routing-table requirements with CX 6300 VSF configuration.\nAssuming the correct layer-2 VLAN already exists, how would you create a new OSPF configuration for a separate routing table?", options: [{key:"A",text:"Create a new routing table, and attach OSPF process ID to it."},{key:"B",text:"Create a new OSPF process ID with vrf name."},{key:"C",text:"Attach OSPF process ID in the VRF configuration."},{key:"D",text:"Attach a new OSPF process ID with a custom routing table."}], answer: "B", explanation: "在 AOS-CX 中，多 VRF 的 OSPF 實例是透過建立獨立的 Process ID 並綁定 VRF 名稱。" },
+      { id: 91, question: "A large retail client is looking to generate a rich set of contextual data based on the location information of wireless clients in their stores.\nWhich standard uses Round Trip Time (RTT) and Fine Time Measurements (FTM) to calculate the distance a client is from an AP?", options: [{key:"A",text:"802.11i"},{key:"B",text:"802.11k"},{key:"C",text:"802.11mc"},{key:"D",text:"802.11v"}], answer: "C", explanation: "802.11mc 標準定義了微秒級的 FTM 測距機制。" },
+      { id: 92, question: "Your Director of Security asks you to assign AOS-CX switch management roles to new employees based on their specific job requirements. After the configuration was complete, it was noted that a user assigned with the auditors role did not have the appropriate level of access on the switch.\nThe user was not allowed to perform firmware upgrades and a privilege level of 15 was not assigned to their role. Which default management role should have been assigned for the user?", options: [{key:"A",text:"administrators"},{key:"B",text:"sysops"},{key:"C",text:"config"},{key:"D",text:"sysadmin"}], answer: "A", explanation: "依要求修正為 A：AOS-CX 內建具備 Level 15 最高權限與韌體升級能力的預設角色為 administrators。" },
+      { id: 93, question: "In a CX 6300 24G, how does a server DAC behave in the port by default for interface 1/1/26?", options: [{key:"A",text:"Port in established in unsupported mode."},{key:"B",text:"Port remains disabled."},{key:"C",text:"Port requires allow-unsupported-transceiver to be enabled."},{key:"D",text:"Port will be enabled for 1/10/25G speeds."}], answer: "C", explanation: "非原廠認證線材插上後預設處於禁用狀態，需開啟 allow-unsupported-transceiver。" },
+      { id: 94, question: "With a CX switch, how would you use loopback 0 as a primary interface for the TFTP protocol?", options: [{key:"A",text:"Define loopback 0 with source-interface"},{key:"B",text:"Use tftp with ip source loopback 0."},{key:"C",text:"Use tftp with interface loopback 0."},{key:"D",text:"Use loopback 0 with with tftp-destination."}], answer: "A", explanation: "TFTP 指定來源介面使用 source-interface 指令。" },
+      { id: 95, question: "What is a primary benefit of BSS coloring?", options: [{key:"A",text:"BSS color tags improve performance by allowing clients on the same channel to share airtime."},{key:"B",text:"BSS color tags are applied to Wi-Fi channels and can reduce the threshold for interference."},{key:"C",text:"BSS color tags are applied to client devices and can reduce the threshold for interference."},{key:"D",text:"BSS color tags are applied on the wireless controllers and can reduce the threshold for interference."}], answer: "B", explanation: "確認為 B：標註於頻道中以調整空間干擾爭用門檻。" },
+      { id: 96, question: "You need to create a keepalive network between two CX 8325 switches for VSX configuration.\nHow should you establish the keepalive connection?", options: [{key:"A",text:"loopback 0 and OSPF area 0 in default VRF"},{key:"B",text:"routed port in custom VRF"},{key:"C",text:"SVI, VLAN trunk allowed all on ISL in default VRF"},{key:"D",text:"SVI, VLAN trunk allowed on all ISL in custom VRF"}], answer: "B", explanation: "VSX Keepalive 最佳實踐是採用獨立的 Routed 埠並置於自定義 VRF 中隔離。" },
+      { id: 97, isDiagram: true, diagram: TOPOLOGY_SVGS.antenna, badge: "圖示拓撲題", question: "Your customer is complaining of weak Wi-Fi coverage in their office. They mention that the office on the other side of the hall has much better signal. What is the likely cause of this issue?", options: [{key:"A",text:"The AP is using an internal antenna."},{key:"B",text:"The AP is using an omni-directional antenna."},{key:"C",text:"The AP is using an external antenna."},{key:"D",text:"The AP is using a directional antenna."}], answer: "D", explanation: "水平極座標輻射場型圖能量集中，屬於定向天線特性。" },
+      { id: 98, question: "You are deploying a bonded 80 MHz wide channel. What is the difference in the noise floor perceived by a client using this bonded channel as compared to an unbonded 20MHz wide channel?", options: [{key:"A",text:"6dB"},{key:"B",text:"3dB"},{key:"C",text:"8dB"},{key:"D",text:"4dB"}], answer: "A", explanation: "從 20MHz 到 80MHz 頻寬翻倍兩次（20->40->80），雜訊底層累計增加 3dB + 3dB = 6dB。" },
+      { id: 99, isDiagram: true, diagram: TOPOLOGY_SVGS.mstp, badge: "拓撲分析題", question: "Refer to the exhibit.\nIn the Core-2 configuration of spanning-tree instance 2 priority 0, what needs to be configured to enable the root for VLAN 20 while VLAN 10 remains root on Core-1?", options: [{key:"A",text:"Spanning-tree instance 2 VLAN 20"},{key:"B",text:"Spanning-tree priority 0 VLAN 20"},{key:"C",text:"Spanning-tree priority root VLAN 20"},{key:"D",text:"Spanning-tree VLAN 20"}], answer: "A", explanation: "將 VLAN 20 映射至 Instance 2，配合 Core-2 上的 priority 0 即可使其成為 Root。" },
+      { id: 100, question: "With the CX 6000 48G switch with uplinks of 1/1/47 and 1/1/48, what does the switch do when a client port detects a loop and tx-disable parameter is used?", options: [{key:"A",text:"The ports that confirmed the loop are disabled."},{key:"B",text:"The ports that transmitted and received the loop are disabled."},{key:"C",text:"The port that transmitted the loop is disabled."},{key:"D",text:"The port that received the loop is disabled."}], answer: "C", explanation: "使用 tx-disable 參數時，僅關閉發送環路封包的發送信號埠。" },
+      { id: 101, question: "You are doing tests in your lab and with the following equipment specifications:\n• AP1 has a radio that generates a 16 dBm signal.\nAP2 has a radio that generates a 13 dBm signal.\nAP1 has an antenna with a gain of 8 dBi.\nAP2 has an antenna with a gain of 12 dBi.\nThe antenna cable for AP1 has a 4 dB loss.\nThe antenna cable for AP2 has a 3 dB loss.\nWhat would be the calculated Equivalent Isotropic Radiated Power (EIRP) for AP1?", options: [{key:"A",text:"40 dBm"},{key:"B",text:"32 dBm"},{key:"C",text:"15 dBm"},{key:"D",text:"20 dBm"}], answer: "D", explanation: "EIRP = 16 + 8 - 4 = 20 dBm。" },
+      { id: 102, question: "What is used to retrieve data stored in a Management Information Base (MIB)?", options: [{key:"A",text:"LLDP-MED"},{key:"B",text:"TLV"},{key:"C",text:"SNMPv3"},{key:"D",text:"SRTP"}], answer: "C", explanation: "SNMPv3 專門用於向 MIB 資料庫檢索及管理設備資訊。" },
+      { id: 103, isDiagram: true, diagram: TOPOLOGY_SVGS.antenna, badge: "圖示拓撲題", question: "Your customer is complaining of weak Wi-Fi coverage in their office. They mention that the office on the other side of the hall has much better signal. What is the likely cause of this issue?", options: [{key:"A",text:"The AP is using an omni-directional antenna."},{key:"B",text:"The AP only supports 5 GHz."},{key:"C",text:"The AP is a remote access point."},{key:"D",text:"The AP is using a directional antenna."}], answer: "D", explanation: "極座標圖呈現波束集中，屬於指向性天線。" },
+      { id: 104, question: "How do you allow a new VLAN 100 between VSX pair inter-switch-link 256 for port 1/45 and 2/45?", options: [{key:"A",text:"vlan trunk add 100 in LAG256"},{key:"B",text:"vlan trunk allowed 100 in LAG256"},{key:"C",text:"vlan trunk allowed all in LAG256"},{key:"D",text:"vlan trunk allowed 100 for ports 1/45 and 1/46"}], answer: "A", explanation: "原題庫標註答案為 A：vlan trunk add 100 in LAG256。" },
+      { id: 105, question: "Your customer has asked you to assign a switch management role for a new user. The customer requires the user role to view nonsensitive switch configuration information and only has the GET method for REST API for all resources other than \\login and \\logout.\nWhich default AOS-CX user role meets these requirements?", options: [{key:"A",text:"operators"},{key:"B",text:"config"},{key:"C",text:"administrators"},{key:"D",text:"auditors"}], answer: "A", explanation: "operators 提供非敏感唯讀查詢權限。" },
+      { id: 106, question: "When setting up an AOS-CX VSX pair, which information does the Inter-Switch Protocol synchronize in the configuration created?", options: [{key:"A",text:"RPVST+"},{key:"B",text:"LACP"},{key:"C",text:"SVI"},{key:"D",text:"UDLD"}], answer: "B", explanation: "ISLP 負責同步 LACP 聚合協商與狀態資訊。" },
+      { id: 107, question: "You are deploying a bonded 80 MHz wide channel. What is the difference in the noise floor perceived by a client using this bonded channel as compared to an unbonded 20MHz wide channel?", options: [{key:"A",text:"4dB"},{key:"B",text:"3dB"},{key:"C",text:"2dB"},{key:"D",text:"6dB"}], answer: "D", explanation: "頻寬兩次翻倍（20->40->80），雜訊增加 6dB。" },
+      { id: 108, question: "Your manufacturing client is deploying twenty headless scanners in their warehouse. These new devices do not support 802.1X authentication.\nHow does the gateway determine the device's role and VLAN derivation-rules when using MPSK Local?", options: [{key:"A",text:"From the device's Calling-Station-ID in the RADIUS Access-Request."},{key:"B",text:"From the HPE Aruba Networking ClearPass enforcement policy based on devices MAC OUI."},{key:"C",text:"It pulls the device roles from HPE Aruba Networking Central during deployment."},{key:"D",text:"From the Type-Length-Value based on the Aruba-MPSK-Key-Name."}], answer: "D", explanation: "透過 Aruba-MPSK-Key-Name TLV 屬性解析對應的角色與 VLAN。" },
+      { id: 109, question: "Which component is used by the HPE Aruba Networking Analytics Engine (NAE)?", options: [{key:"A",text:"Lisp-based agents"},{key:"B",text:"Swift-based scripts"},{key:"C",text:"Python-based agents"},{key:"D",text:"Ruby-based scripts"}], answer: "C", explanation: "NAE Agents 全面基於 Python 撰寫與驅動。" },
+      { id: 110, question: "How Multicast Transmission Optimization implemented in an HPE Aruba Networking wireless network?", options: [{key:"A",text:"When this option is enabled the minimum default rate for multicast traffic is set to 12 Mbps for 5 GHz."},{key:"B",text:"The optimal rate for sending multicast frames is based on the lowest unicast rate across all associated clients."},{key:"C",text:"The optimal rate for sending multicast frames is based on the highest broadcast rate across all associated clients."},{key:"D",text:"The optimal rate for sending multicast frames is based on the lowest broadcast rate across all associated clients."}], answer: "B", explanation: "組播最佳速率依據當前相連客戶端中最低的單播協商速率動態決定。" },
+      { id: 111, question: "Which standard supported by some HPE Aruba Networking APs can enable a customer to accurately locate wireless client devices within a few meters?", options: [{key:"A",text:"802.11mc"},{key:"B",text:"802.11ah"},{key:"C",text:"802.11be"},{key:"D",text:"802.11v"}], answer: "A", explanation: "802.11mc 具備 FTM 機制，可精確測距至數公尺內。" },
+      { id: 112, question: "What is a primary benefit of BSS coloring?", options: [{key:"A",text:"BSS color tags are applied to client devices and can reduce the threshold for interference"},{key:"B",text:"BSS color tags are applied to Wi-Fi channels and can reduce the threshold for interference."},{key:"C",text:"BSS color tags are applied on the wireless controllers and can reduce the threshold for interference."},{key:"D",text:"BSS color tags improve performance by allowing APs on the same channel to be farther apart."}], answer: "B", explanation: "依要求修正為 B：作用於信道上以降低同頻爭用干擾門檻。" },
+      { id: 113, question: "You need to have different routing-table requirements with CX 6300 VSF configuration.\nAssuming the correct layer-2 VLAN already exists, how would you create a new SVI for a separate routing table?", options: [{key:"A",text:"Create a new VLAN, and attach the routing table to it."},{key:"B",text:"Create a new SVI and use attach vrf command."},{key:"C",text:"Create a new VLAN, and attach the VRF to it."},{key:"D",text:"Create a new routing table, and attach VLANs to it."}], answer: "B", explanation: "建立 SVI 並於介面下執行 attach vrf 綁定至專屬路由表。" },
+      { id: 114, isDrag: true, dragType: "match", badge: "拖曳配對題", question: "Match the solution components of HPE Aruba Networking Central NetConductor. (Options may be used more than once or not at all.)", slots: ["Built-in, AI-powered client visibility and fingerprinting capability that leverages infrastructure telemetry and ML models", "Defines user and device groups and creates associated access enforcement rules", "Enables frictionless onboarding either through MAC or cloud identity stores", "Simplifies overlay creation using intuitive GUI and automatic generation of configs"], items: ["Client Insights", "Policy Manager", "Cloud Auth", "The Fabric Wizard"], correctMatches: ["Client Insights", "Policy Manager", "Cloud Auth", "The Fabric Wizard"], answer: "拖曳配對", explanation: "AI指紋=Client Insights；策略定義=Policy Manager；身分入網=Cloud Auth；自動配置=Fabric Wizard。" },
+      { id: 115, question: "What is used to retrieve data stored in a Management Information Base (MIB)?", options: [{key:"A",text:"LLDP-MED"},{key:"B",text:"TLV"},{key:"C",text:"CDP"},{key:"D",text:"SNMPv3"}], answer: "D", explanation: "SNMPv3 用於檢索及維護 MIB 資料庫。" },
+      { id: 116, question: "Your customer currently has two (2) 5406 modular switches with MSTP configured as their core switches. You are proposing a new solution.\nWhat would you explain regarding the AOS-CX VSX switch pair when the Primary VSX node is replaced and the system MAC is replaced?", options: [{key:"A",text:"Configure VMAC on the Primary VSX node under VSX to retain MAC after hardware replacement."},{key:"B",text:"During the initial VSX configuration, the system-mac is assigned with a fixed MAC based on VSX ID."},{key:"C",text:"VSX will select the MAC address from a node that is a higher ID."},{key:"D",text:"VSX will select the MAC address from a node that is the lower ID."}], answer: "A", explanation: "配置 VSX VMAC 可在硬體更換後保留虛擬 MAC，確保二三層網路不震盪。" },
+      { id: 117, question: "You are proposing new CX 8360 VSX switches to replace a customer's existing core switches. The customer is concerned about the possibility of a split-brain scenario between the VSX pair.\nHow is the VSX pair affected when the keepalive connection is down, but ISL is okay?", options: [{key:"A",text:"The VSX pair is still in protected mode."},{key:"B",text:"The VSX pair forwards traffic normally."},{key:"C",text:"The VSX pair is not at risk."},{key:"D",text:"The VSX pair uses only the primary node for traffic forwarding."}], answer: "B", explanation: "ISL 正常通訊時，狀態與控制面依然同步，VSX 維持正常雙活轉發。" },
+      { id: 118, question: "Which component is used by the HPE Aruba Networking Network Analytics Engine (NAE)?", options: [{key:"A",text:"Current State Database"},{key:"B",text:"PostgreSQL Database"},{key:"C",text:"JSON-based scripts"},{key:"D",text:"Perl-based agents"}], answer: "A", explanation: "NAE 依賴記憶體中的 Current State Database (CSDB) 分析即時狀態。" },
+      { id: 119, isDiagram: true, diagram: TOPOLOGY_SVGS.mstp, badge: "拓撲分析題", question: "Refer to the exhibit.\nIn Access-1, what needs to be identically configured in MSTP to load-balance VLANs?", options: [{key:"A",text:"Spanning-tree instance VLAN mapping"},{key:"B",text:"Spanning-tree cist mapping"},{key:"C",text:"Spanning-tree root-guard setting"},{key:"D",text:"Spanning-tree bpdu-guard setting"}], answer: "A", explanation: "MSTP 實現 VLAN 負載分流的前提是所有節點的 Instance-to-VLAN 映射完全一致。" },
+      { id: 120, question: "You need to have different routing-table requirements with CX 6300 VSF configuration.\nAssuming the correct layer-2 VLAN already exists, how would you create a new SVI for a separate routing table?", options: [{key:"A",text:"Create a new interface VLAN and attach vrf custom-vrf."},{key:"B",text:"Create a new VLAN, and attach the routing table to it."},{key:"C",text:"Create a new VLAN, and attach the VRF to it."},{key:"D",text:"Create a new VRF. and add new SVIs under the configuration."}], answer: "D", explanation: "建立新 VRF 並將 SVI 建立於該 VRF 配置區塊中。" },
+      { id: 121, question: "Your Director of Security asks you to assign AOS-CX switch management roles to new employees based on their specific job requirements. After the configuration was complete, it was noted that a user assigned with the administrators role did not have the appropriate level of access on the switch.\nThe user was not limited to viewing nonsensitive configuration information and a level of 1 was not assigned to their role. Which default management role should have been assigned for the user?", options: [{key:"A",text:"operators"},{key:"B",text:"sysadmin"},{key:"C",text:"config"},{key:"D",text:"sysops"}], answer: "A", explanation: "Level 1 唯讀非敏感角色為 operators。" },
+      { id: 122, question: "Your manufacturing client is deploying two hundred wireless IP cameras and fifty headless scanners in their warehouse. These new devices do not support 802.1X authentication.\nHow can HPE Aruba Networking enhance security for these new IP cameras in this environment?", options: [{key:"A",text:"MPSK provides for each device in the WLAN to have its own unique pre-shared key."},{key:"B",text:"HPE Aruba Networking Central will derive the unique pre-shared keys when the devices are deployed."},{key:"C",text:"Use MPSK Local to automatically provide unique pre-shared keys for devices."},{key:"D",text:"HPE Aruba Networking ClearPass performs the 802.1x authentication and installs a certificate."}], answer: "A", explanation: "MPSK 允許在同一個 SSID 下為每台物聯網設備提供獨一無二的專屬預先共用金鑰。" },
+      { id: 123, question: "A large retail client is looking to generate a rich set of contextual data based on the location information of wireless clients in their stores.\nWhich standard uses Round Trip Time (RTT) and Fine Time Measurements (FTM) to calculate the distance a client is from an AP?", options: [{key:"A",text:"802.11i"},{key:"B",text:"802.11w"},{key:"C",text:"802.11mc"},{key:"D",text:"802.11k"}], answer: "C", explanation: "802.11mc 定義了 Wi-Fi RTT 雙向測距演算法。" },
+      { id: 124, question: "Your customer has asked you to assign a switch management role for a new user. The customer requires the user role to only have Web Ul access to the System > Log page and only have access to the GET method for REST API for the /logs/event resource.\nWhich default AOS-CX user role meets these requirements?", options: [{key:"A",text:"config"},{key:"B",text:"helpdesk"},{key:"C",text:"sysadmin"},{key:"D",text:"auditors"}], answer: "D", explanation: "auditors 角色專供安全審計人員查看系統日誌事件。" },
+      { id: 125, question: "When setting up an AOS-CX VSX pair, which information does the Inter-Switch Link Protocol synchronize in the configuration created?", options: [{key:"A",text:"RPVST+"},{key:"B",text:"UDLD"},{key:"C",text:"SVI"},{key:"D",text:"MAC tables"}], answer: "D", explanation: "依要求修正為 D：ISLP 專職在二層即時同步 MAC 表等轉發表項。" },
+      { id: 126, question: "You are doing tests in your lab and with the following equipment specifications:\nAP1 has a radio that generates a 17 dBm signal.\nAP2 has a radio that generates a 9 dBm signal.\nAP1 has an antenna with a gain of 8 dBi.\nAP2 has an antenna with a gain of 12 dBi.\nThe antenna cable for AP1 has a 2 dB loss.\nThe antenna cable for AP2 has a 3 dB loss.\nWhat would be the calculated Equivalent Isotropic Radiated Power (EIRP) for AP1?", options: [{key:"A",text:"-2 dBm"},{key:"B",text:"18 dBm"},{key:"C",text:"2 dBm"},{key:"D",text:"23 dBm"}], answer: "D", explanation: "EIRP = 17 + 8 - 2 = 23 dBm。" },
+      { id: 127, question: "What is a primary benefit of BSS coloring?", options: [{key:"A",text:"BSS color tags improve security by identifying compromised clients and tagging them as threats."},{key:"B",text:"BSS color tags improve performance by allowing APs on the same channel to be farther apart."},{key:"C",text:"BSS color tags improve security by identifying rogue APs and tagging them as threats."},{key:"D",text:"BSS color tags are applied to Wi-Fi channels and can reduce the threshold for interference."}], answer: "D", explanation: "BSS coloring 用於 Wi-Fi 信道上減少重疊干擾與爭用開銷。" },
+      { id: 128, question: "With the AOS-CX switch configuration, what is the first-hop protocol feature that is used for VSX L3 gateway as per Aruba recommendation?", options: [{key:"A",text:"Active Gateway"},{key:"B",text:"Active-Active VRRP"},{key:"C",text:"VRRP"},{key:"D",text:"SVI with vsx-sync"}], answer: "A", explanation: "Aruba 官方強烈推薦在 VSX 雙核心上使用 Active Gateway 實現雙活網關轉發。" },
+      { id: 129, question: "How is Dynamic Multicast Optimization (DMO) implemented in an HPE Aruba Networking wireless network?", options: [{key:"A",text:"The AP uses QoS to provide equal air time for multicast traffic."},{key:"B",text:"DMO is configured globally for each SSID in use in the network."},{key:"C",text:"DMO is configured globally for each VLAN in use in the network."},{key:"D",text:"DMO is configured individually for each SSID in use in the network."}], answer: "D", explanation: "DMO 是在各 SSID 的配置中獨立啟用與調整。" },
+      { id: 130, question: "Your Director of Security asks you to assign AOS-CX switch management roles to new employees based on their specific job requirements. After the configuration was complete, it was noted that a user assigned with the auditors role did not have the appropriate level of access on the switch.\nThe user was not allowed to perform firmware upgrades and a privilege level of 15 was not assigned to their role. Which default management role should have been assigned for the user?", options: [{key:"A",text:"sysadmin"},{key:"B",text:"sysops"},{key:"C",text:"administrators"},{key:"D",text:"helpdesk"}], answer: "A", explanation: "原題庫標註答案為 A：sysadmin 角色具備 Level 15 與韌體升級權限。" },
+      { id: 131, question: "With a CX switch, how would you use loopback 1 as a primary interface for the RADIUS protocol?", options: [{key:"A",text:"Set radius-group with ip source loopback 1."},{key:"B",text:"Configure radius servers with interface loopback 1."},{key:"C",text:"Use loopback 1 with radius-destination."},{key:"D",text:"Define loopback 1 with source-interface."}], answer: "D", explanation: "指定來源介面使用 source-interface 指令。" },
+      { id: 132, question: "Your manufacturing client is having installers deploy seventy headless scanners and fifty IP cameras in their warehouse. These new devices do not support 802.1X authentication.\nHow can HPE Aruba Networking reduce the IT administration overhead associated with this deployment while maintaining a secure environment using MPSK?", options: [{key:"A",text:"Use MPSK Local to automatically provide unique pre-shared keys for devices."},{key:"B",text:"Have the installers generate keys with HPE Aruba Networking ClearPass Self Service Registration."},{key:"C",text:"Pre-define the unique pre-shared keys in HPE Aruba Networking Central before deployment."},{key:"D",text:"MPSK Local will allow the cameras to share a key and the scanners to share a different key."}], answer: "B", explanation: "依要求修正為 B：透過 ClearPass 自助訪客/設備註冊頁面由現場安裝人員自行登錄。" },
+      { id: 133, question: "Which standard supported by some HPE Aruba Networking APs can enable a customer to accurately locate wireless client devices within a few meters?", options: [{key:"A",text:"802.11mc"},{key:"B",text:"802.11г"},{key:"C",text:"802.11k"},{key:"D",text:"802.11w"}], answer: "A", explanation: "802.11mc Wi-Fi RTT 支援公尺級定位。" },
+      { id: 134, question: "How do you allow a new VLAN 200 for downstream access switch with VSX pair using VSX LAG?", options: [{key:"A",text:"vlan trunk allowed 200 in MLAG 1"},{key:"B",text:"vlan trunk add 100 in MLAG1"},{key:"C",text:"vlan trunk allowed 200 for ports 1/45 and 1/46"},{key:"D",text:"vlan trunk allowed 200 in LAG 1 multi-chassis"}], answer: "D", explanation: "標準語法：在 multi-chassis LAG 上配置 vlan trunk allowed 200。" },
+      { id: 135, question: "Your customer has asked you to assign a switch management role for a new user. The customer requires the user role to view nonsensitive switch configuration information and only has the GET method for REST API for all resources other than \\login and \\logout.\nWhich default AOS-CX user role meets these requirements?", options: [{key:"A",text:"administrators"},{key:"B",text:"helpdesk"},{key:"C",text:"auditors"},{key:"D",text:"operators"}], answer: "D", explanation: "operators 具備唯讀非敏感資料之權限。" },
+      { id: 136, question: "Which feature supported by SNMPv3 provides an advantage over SNMPv2c?", options: [{key:"A",text:"64-bit counters"},{key:"B",text:"GetBulk"},{key:"C",text:"Community strings"},{key:"D",text:"Message integrity"}], answer: "D", explanation: "SNMPv3 提供 Message Integrity（訊息防偽與完整性檢查）。" },
+      { id: 137, isDiagram: true, diagram: TOPOLOGY_SVGS.mstp, badge: "拓撲分析題", question: "Refer to the exhibit.\nIn Access-2, what needs to be identically configured in MSTP to load-balance VLANs?", options: [{key:"A",text:"Spanning-tree root"},{key:"B",text:"Spanning-tree secondary root"},{key:"C",text:"Spanning-tree priority"},{key:"D",text:"Spanning-tree config-name"}], answer: "D", explanation: "同 MST 區域核心三要素之一為相同的 Spanning-tree config-name。" },
+      { id: 138, question: "Which component is used by the HPE Aruba Networking Network Analytics Engine (NAE)?", options: [{key:"A",text:"Ruby-based scripts"},{key:"B",text:"Apache Cassandra"},{key:"C",text:"Firebase Realtime Database"},{key:"D",text:"Time Series Database"}], answer: "D", explanation: "NAE 內部使用 Time Series Database (TSDB) 儲存遙測度量數據以進行趨勢分析。" },
+      { id: 139, question: "With the AOS-CX switch configuration, what is the Active Gateway feature that is used for, and is unique to, VSX configuration?", options: [{key:"A",text:"VRIDs need to be non-overlapping with VRRP"},{key:"B",text:"VRRP and Active gateway are mutually exclusive on a VLAN"},{key:"C",text:"VRID is set automatically as SVI VLAN ID"},{key:"D",text:"VRRP and Active Gateway can be configured on a single VLAN for interoperability"}], answer: "B", explanation: "同一 VLAN 介面上，Active Gateway 與傳統 VRRP 是互斥的，不能同時設定。" },
+      { id: 140, question: "With the CX 6200 48G switch with uplinks of 1/1/47 and 1/1/48, how do you protect client ports from forming layer-2 loops?", options: [{key:"A",text:"int 1/1/1-1/1/46, loop-guard"},{key:"B",text:"int 1/1/1-1/1/48, loop-protect"},{key:"C",text:"int 1/1/1-1/1/52, loop-guard"},{key:"D",text:"int 1/1/1-1/1/46, loop-protect"}], answer: "D", explanation: "在客戶端存取埠 1/1/1-1/1/46 啟用 loop-protect（Uplink 埠嚴禁配置）。" },
+      { id: 141, question: "When setting up an AOS-CX VSX pair, which information does the Inter-Switch Link Protocol configuration use in the configuration created?", options: [{key:"A",text:"hello interval is based on the value set by dead interval"},{key:"B",text:"hello interval 100ms by default"},{key:"C",text:"hello interval is 1s by default"},{key:"D",text:"hello interval is disabled by default"}], answer: "C", explanation: "VSX ISL 預設 Hello 間隔為 1 秒（Dead interval 為 20 秒）。" },
+      { id: 142, question: "Your customer has asked you to assign a switch management role for a new user. The customer requires the user role to view switch configuration information and have access to the PUT and POST methods for REST API.\nWhich default AOS-CX user role meets these requirements?", options: [{key:"A",text:"sysadmin"},{key:"B",text:"config"},{key:"C",text:"administrators"},{key:"D",text:"operators"}], answer: "C", explanation: "administrators 角色具備對 REST 資源執行 PUT（修改）與 POST（建立）的最高管理權限。" },
+      { id: 143, question: "Your manufacturing client is having installers deploy seventy headless scanners and fifty IP cameras in their warehouse. These new devices do not support 802.1X authentication.\nHow can HPE Aruba Networking reduce the IT administration overhead associated with this deployment while maintaining a secure environment using MPSK?", options: [{key:"A",text:"Use MPSK Local to automatically provide unique pre-shared keys for devices."},{key:"B",text:"Have the MPSK gateway derive the unique pre-shared keys based on the MAC OUI."},{key:"C",text:"Pre-define the unique pre-shared keys in HPE Aruba Networking Central before deployment."},{key:"D",text:"Have the installers generate keys with HPE Aruba Networking ClearPass Self Service Registration."}], answer: "D", explanation: "由現場安裝人員透過 ClearPass Self-Service 自助登記 MPSK，大幅減輕 IT 管理員負擔。" },
+      { id: 144, question: "Your Director of Security asks you to assign AOS-CX switch management roles to new employees based on their specific job requirements. After the configuration was complete, it was noted that a user assigned with the administrators role did not have the appropriate level of access on the switch.\nThe user was not limited to viewing nonsensitive configuration information and a level of 1 was not assigned to their role.\nWhich default management role should have been assigned for the user?", options: [{key:"A",text:"guests"},{key:"B",text:"helpdesk"},{key:"C",text:"sysadmin"},{key:"D",text:"operators"}], answer: "D", explanation: "Level 1 唯讀非敏感角色為 operators。" },
+      { id: 145, isDrag: true, dragType: "match", badge: "拖曳配對題", question: "Match the typical 802.1X authentication roles to their functions. (Options may be used more than once or not at all.)", slots: ["Is the Authentication Source", "Is responsible for granting or denying access", "Software that enables use of 802.1X network authentication protocol", "The device that controls initial network access"], items: ["Authentication Server", "Authenticator", "Supplicant", "Backend Services"], correctMatches: ["Authentication Server", "Authentication Server", "Supplicant", "Authenticator"], answer: "拖曳配對", explanation: "驗證來源與授權決策=Authentication Server；客戶端軟體=Supplicant；控制存取設備=Authenticator。" },
+      { id: 146, question: "The customer needs a network hardware refresh to replace an aging HPE Aruba Networking 5406R core switch pair using spanning tree configuration with CX 8360-32YC switches.\nWhat is the benefit of VSX clustering with the new solution?", options: [{key:"A",text:"dual HPE Aruba Networking AP LAN port connectivity for PoE redundancy"},{key:"B",text:"stacked data-plane"},{key:"C",text:"distributed trunking support with QSFP28 interfaces"},{key:"D",text:"no spanning-tree requirement"}], answer: "D", explanation: "VSX 向上與向下均呈現標準二層 LAG，節點間徹底擺脫了對 Spanning Tree 的依賴。" },
+      { id: 147, isDiagram: true, diagram: TOPOLOGY_SVGS.mstp, badge: "拓撲分析題", question: "Refer to the exhibit.\nIn Access-1, what needs to be identically configured in MSTP to load-balance VLANs?", options: [{key:"A",text:"Spanning-tree secondary root"},{key:"B",text:"Spanning-tree config-rev"},{key:"C",text:"Spanning-tree priority"},{key:"D",text:"Spanning-tree root"}], answer: "B", explanation: "同一 MST Region 內所有交換器的修訂版本號（config-rev）必須完全一致。" },
+      { id: 148, question: "You need to reclassify a suspected rogue AP from a \"Neighbor\" to \"Manually contained\".\nWhere in HPE Aruba Networking Central can this be accomplished?", options: [{key:"A",text:"Applications > IDS/IPS"},{key:"B",text:"Security > RAPIDS"},{key:"C",text:"Devices > Access Points"},{key:"D",text:"Audit Trail > Rogues"}], answer: "B", explanation: "Central 中所有流氓 AP 監控與手動抑制（Contained）皆在 Security > RAPIDS 選單執行。" },
+      { id: 149, question: "Which protocol can be sent from an AOS-CX switch to provision DSCP and PoE settings to a connected VoIP phone?", options: [{key:"A",text:"LLDP"},{key:"B",text:"LACP"},{key:"C",text:"LLDP-MED"},{key:"D",text:"CDP"}], answer: "C", explanation: "LLDP-MED 延伸協定專門用於下發語音 QoS (DSCP) 與供電功率 (PoE) 參數。" },
+      { id: 150, question: "What is true about working with APIs on AOS-CX switches?", options: [{key:"A",text:"In read-write mode, the syntax is validated to prevent writes to the database that may destabilize the switch."},{key:"B",text:"An API PUT is used for login, and an API POST is used to change the management password."},{key:"C",text:"An API POST is used for login, and an API PUT is used to change the management password."},{key:"D",text:"If the REST API mode is set to read-only, no POST or PUT commands will be accepted by the switch."}], answer: "C", explanation: "依實務要求修正為 C：REST API 登入取得 token 採 POST，修改既有密碼資源採 PUT。" },
+      { id: 151, question: "QoS is effective in a wired network if it is:", options: [{key:"A",text:"enabled on every switch link within the wired LAN."},{key:"B",text:"enabled for switch-to-switch connections but WLAN connections have no impact."},{key:"C",text:"enabled for all WLAN with WMM but switch connections have no impact."},{key:"D",text:"enabled end-to-end including through your private network infrastructure."}], answer: "D", explanation: "QoS 唯有在全路徑實現端到端（End-to-End）一致的分類與佇列調度時才最具效益。" },
+      { id: 152, question: "Which technology is IEEE 802.11r using to reduce re-authentication delays when clients roam between APs?", options: [{key:"A",text:"Ahead Key Caching"},{key:"B",text:"Opportunistic Key Caching"},{key:"C",text:"Advanced Path Exchange"},{key:"D",text:"Fast BSS Transition"}], answer: "D", explanation: "802.11r 標準定義了 Fast BSS Transition (FT) 機制，實現微秒級快速漫遊。" },
+      { id: 153, question: "A company currently has 2,000 AP-635 access points deployed across four HPE Aruba Networking 9240 Campus Gateways. Each pair of gateways was assigned a different site. Gateway Cluster1 was assigned to SiteA and Gateway Cluster2 was assigned to SiteB.\nThe customer has the following requirements:\n-High availability between the 2 clusters.\n-No SSIDs have been configured and would like to broadcast two new SSIDs (802.1X and MPSK).\n-Share firewall sessions between clusters.\nWhich changes does the administrator need to make to meet these requirements? (Choose two.)", options: [{key:"A",text:"Move Gateway Cluster1 from SiteA to SiteC."},{key:"B",text:"Move Gateway Cluster2 from SiteB to SiteA."},{key:"C",text:"Enable manual cluster configuration."},{key:"D",text:"Enable Auto-Site."},{key:"E",text:"Enable Auto-Group."}], answer: ["D","E"], explanation: "依要求修正為 D, E：透過 Central 啟用 Auto-Site 與 Auto-Group 自動化編排叢集。" },
+      { id: 154, question: "With the given output from a CX 6100 switch:\nshow interface 1/1/51 transceiver detail\n... Rx Power (mW/dBm): 0.0001/-40.00\nRecent Alarms: Rx Power low alarm, Rx loss of signal ...\nWhat is the correct detail that can be observed from the output above?", options: [{key:"A",text:"The interface can be split into four different channels"},{key:"B",text:"The interface is compatible with single-mode fiber"},{key:"C",text:"The interface link is up"},{key:"D",text:"The interface link is down"}], answer: "D", explanation: "光收功率過低且出現 loss of signal 告警，鏈路處於 Down 狀態。" },
+      { id: 155, question: "With the given output from a CX 6200F switch below:\nshow system inventory transceiver\n... 1/1/51 MTRS-01X11 10G-SR/MTRS-01X11-HP (unsupported)\nWhat is the default behavior on the interfaces 1/1/51 and 2/1/51?", options: [{key:"A",text:"The interfaces are disabled by default."},{key:"B",text:"The interfaces are enabled by default."},{key:"C",text:"The interfaces are enabled, and no traffic is forwarded before allow-unsupported-transceiver is issued."},{key:"D",text:"The interfaces are disabled before allow-unsupported-transceiver is issued."}], answer: "D", explanation: "AOS-CX 預設會禁用未授權光模組所在連接埠，直到手動宣告開放指令。" },
+      { id: 156, question: "What is the result if all VLANs fail in the VLAN Probe for a gateway cluster?", options: [{key:"A",text:"High value sessions are synced."},{key:"B",text:"Only APs are fully synced."},{key:"C",text:"APs and Clients are fully synced."},{key:"D",text:"Failover events do not de-authorize users."}], answer: "A", explanation: "依要求修正為 A：當 VLAN 探測全斷時，系統優先保證高價值關鍵會話的同步。" },
+      { id: 157, question: "A company recently upgraded its campus switching infrastructure with CX 6300 switches. They have implemented 802.1X authentication on edge ports where laptop and loT devices typically connect. An administrator has noticed that for PoE devices, the ports are delivering the maximum wattage instead of what the device actually needs. Upon connecting the loT devices, the devices request their specific required wattage through information exchange.\nConcerned about this waste of electricity, what should the administrator implement to solve this problem?", options: [{key:"A",text:"Implement a classifier policy with the correct power definitions."},{key:"B",text:"Globally enable the QoS trust setting for LLDP and/or CDP."},{key:"C",text:"Create a device profile with fingerprint based on devices requiring 802.3at."},{key:"D",text:"Enable AAA authentication to exempt LLDP and/or CDP information."}], answer: "D", explanation: "允許 PoE 設備在通過 802.1X 認證前豁免放行 LLDP/CDP，使供電協商得以正常完成。" },
+      { id: 158, question: "What are benefits of using MSTP instead of single instance STP?", options: [{key:"A",text:"MSTP being a newer standard, is simpler to configure/setup than STP"},{key:"B",text:"MSTP allows for multiple active egress links."},{key:"C",text:"MSTP allows for more than one root switch for each VLAN."},{key:"D",text:"MSTP with multiple instances creates more places to troubleshoot."}], answer: "B", explanation: "MSTP 可將不同 VLAN 映射至不同執行個體，使冗餘鏈路皆可負載分流並維持雙向轉發。" },
+      { id: 159, isDiagram: true, diagram: TOPOLOGY_SVGS.q159, badge: "拓撲除錯題", question: "You are adding a new gateway (gw2) to a site. After bringing up the 2nd link to sw-agg2 on gw2 you notice connectivity issues to the gateway.\nHow would you best remediate the issue to gw2?\nConfig snippet on both sw-agg1 and sw-agg2:\ninterface 1/1/10\n no shutdown\n lag 10\n exit\ninterface lag 10\n no shutdown\n no routing\n vlan trunk native 1\n vlan trunk allowed all\n exit", options: [{key:"A",text:"Reconfigure LAG 10 to be multi-chassis and the keep-alive link can remain down."},{key:"B",text:"Remove spanning tree on gw2 and the keep-alive link can remain down."},{key:"C",text:"Add spanning tree to gw2 and then remediate the keep-alive link on the aggregation VSX pair."},{key:"D",text:"The keep-alive must be up first before fixing any secondary issues."}], answer: "A", explanation: "網關跨接至 VSX 雙核心時，交換機上的 LAG 10 必須宣告為 multi-chassis；ISL 正常時 Keepalive 中斷不影響轉發。" },
+      { id: 160, question: "Which feature supported by SNMPv3 provides an advantage over SNMPv2c?", options: [{key:"A",text:"Community strings"},{key:"B",text:"InformRequest"},{key:"C",text:"GetBulk"},{key:"D",text:"Message integrity"}], answer: "D", explanation: "SNMPv3 提供 Message Integrity（訊息防偽與完整性檢查）。" },
+      { id: 161, isDrag: true, dragType: "match", badge: "拖曳配對題", question: "Match the fiber type and connector to the type of transceiver. (Options may be used more than once or not at all.)", slots: ["100G QSFP28 SR4 transceiver", "40G QSFP+ BIDI transceiver", "100G QSFP28 LR4 transceiver", "10G SFP+ SR transceiver"], items: ["Multimode Fiber MPO 12-fiber connector", "Multimode Fiber LC Connector", "Single-Mode Fiber LC connector"], isMultiUse: true, correctMatches: ["Multimode Fiber MPO 12-fiber connector", "Multimode Fiber LC Connector", "Single-Mode Fiber LC connector", "Multimode Fiber LC Connector"], answer: "拖曳配對", explanation: "100G SR4 用 MPO 多模；40G BIDI 與 10G SR 用雙工 LC 多模；100G LR4 為長距單模用 LC。" }
+    ];
+
+    const EXAM_DATABASE = RAW_EXAM_DATABASE.map(formatQuestionItem).sort((a, b) => a.id - b.id);
+
+    let curList = [];
+    let curIdx = 0;
+    let curMode = 'all19';
+    let userAnswers = {};
+    let selectedSourceItem = null;
+    let dbFilter = 'all';
+    let dbRendered = false;
+
+    function shuffleArray(array) {
+      let arr = [...array];
+      for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+      return arr;
+    }
+
+    function getStoredWrongs() {
+      try {
+        return new Set(JSON.parse(localStorage.getItem('hpe7_a01_wrongs') || '[]'));
+      } catch (e) {
+        return new Set();
+      }
+    }
+
+    function saveStoredWrongs(wrongSet) {
+      try {
+        localStorage.setItem('hpe7_a01_wrongs', JSON.stringify([...wrongSet]));
+      } catch (e) {}
+    }
+
+    let wrongIds = getStoredWrongs();
+
+    function updateWrongCountBadge() {
+      const el = document.getElementById('home-wrong-count');
+      if (el) el.innerText = wrongIds.size;
+
+      const totalEl = document.getElementById('stat-total-count');
+      const diagEl = document.getElementById('stat-diag-count');
+      const dragEl = document.getElementById('stat-drag-count');
+      const pureChoiceEl = document.getElementById('stat-pure-choice-count');
+
+      const diagCount = EXAM_DATABASE.filter(q => q.isDiagram).length;
+      const dragCount = EXAM_DATABASE.filter(q => q.isDrag).length;
+      const pureChoiceCount = EXAM_DATABASE.filter(q => !q.isDiagram && !q.isDrag).length;
+
+      if (totalEl) totalEl.innerText = EXAM_DATABASE.length;
+      if (diagEl) diagEl.innerText = diagCount;
+      if (dragEl) dragEl.innerText = dragCount;
+      if (pureChoiceEl) pureChoiceEl.innerText = pureChoiceCount;
+    }
+
+    function showHome() {
+      document.getElementById('view-home').style.display = 'block';
+      document.getElementById('view-quiz').style.display = 'none';
+      document.getElementById('view-score').style.display = 'none';
+      updateWrongCountBadge();
+    }
+
+    function startQuiz(mode) {
+      curMode = mode;
+      let rawList = [];
+      if (mode === 'all19') {
+        rawList = EXAM_DATABASE.filter(q => CORE_19_IDS.includes(q.id));
+        document.getElementById('quiz-mode-pill').innerText = "核心19題全練";
+      } else if (mode === 'pure_choice') {
+        rawList = EXAM_DATABASE.filter(q => !q.isDiagram && !q.isDrag);
+        document.getElementById('quiz-mode-pill').innerText = `純選擇題 (${rawList.length}題)`;
+      } else if (mode === 'diagram') {
+        rawList = EXAM_DATABASE.filter(q => q.isDiagram);
+        document.getElementById('quiz-mode-pill').innerText = `專攻圖示 (${rawList.length}題)`;
+      } else if (mode === 'drag') {
+        rawList = EXAM_DATABASE.filter(q => q.isDrag);
+        document.getElementById('quiz-mode-pill').innerText = `專攻拖曳 (${rawList.length}題)`;
+      } else if (mode === 'random') {
+        // 修改這裡：打亂後精確擷取 60 題
+        let shuffled = shuffleArray(EXAM_DATABASE);
+        rawList = shuffled.slice(0, 60);
+        document.getElementById('quiz-mode-pill').innerText = `官方 60 題抽考模擬 (${rawList.length}題)`;
+      } else if (mode === 'wrong') {
+        if (wrongIds.size === 0) {
+          alert("目前沒有錯題紀錄喔！太棒了！");
+          return;
+        }
+        rawList = EXAM_DATABASE.filter(q => wrongIds.has(q.id));
+        document.getElementById('quiz-mode-pill').innerText = `錯題專區 (${rawList.length}題)`;
+      }
+
+      curList = rawList.map(item => {
+        let cloned = { ...item };
+        if (!cloned.isDrag && cloned.originalOptions && cloned.originalOptions.length > 0) {
+          let shuffledTexts = shuffleArray(cloned.originalOptions.map(o => o.text));
+          const keys = ["A", "B", "C", "D", "E", "F"];
+          cloned.currentOptions = shuffledTexts.map((txt, idx) => ({
+            key: keys[idx] || String.fromCharCode(65 + idx),
+            text: txt
+          }));
+        }
+        return cloned;
+      });
+
+      curIdx = 0;
+      userAnswers = {};
+      selectedSourceItem = null;
+      
+      document.getElementById('view-home').style.display = 'none';
+      document.getElementById('view-quiz').style.display = 'flex';
+      document.getElementById('view-score').style.display = 'none';
+      
+      renderQ();
+    }
+
+    function retryCurrentMode() {
+      startQuiz(curMode);
+    }
+
+    function renderQ() {
+      const q = curList[curIdx];
+      if (!q) return;
+
+      document.getElementById('quiz-progress').innerText = `${curIdx + 1} / ${curList.length}`;
+      document.getElementById('q-id-text').innerText = `#Q${q.id}`;
+      document.getElementById('q-badge').innerText = q.badge;
+      document.getElementById('q-text').innerText = q.question;
+
+      const diagSlot = document.getElementById('q-diagram-slot');
+      diagSlot.innerHTML = q.diagram ? q.diagram : '';
+
+      const explainBox = document.getElementById('q-explain-box');
+      if (explainBox) explainBox.style.display = 'none';
+
+      const optSlot = document.getElementById('q-options-slot');
+      optSlot.innerHTML = '';
+
+      if (q.isDrag) {
+        if (!userAnswers[q.id]) {
+          userAnswers[q.id] = {
+            placed: {},
+            pool: q.isMultiUse ? [...q.items] : [...q.items].sort(() => Math.random() - 0.5)
+          };
+        }
+        renderInteractiveDragUI(q, optSlot);
+      } else {
+        const curPickedTexts = userAnswers[q.id] || [];
+        const optsToRender = q.currentOptions || q.originalOptions || [];
+        const isMultiple = q.correctTexts.length > 1;
+
+        if (optsToRender.length > 0) {
+          optsToRender.forEach(opt => {
+            const isSelected = isMultiple ? curPickedTexts.includes(opt.text) : (userAnswers[q.id] === opt.text);
+
+            const div = document.createElement('div');
+            div.className = `p-3 rounded-2xl border text-xs sm:text-sm flex items-start gap-2.5 cursor-pointer touch-btn ${
+              isSelected ? 'border-aruba bg-aruba/20 text-white font-medium shadow-md' : 'border-slate-800 bg-[#070D18] text-slate-300 hover:border-slate-700'
+            }`;
+            div.onclick = () => selectOption(opt.text);
+            div.innerHTML = `
+              <span class="w-5 h-5 rounded-md flex items-center justify-center font-bold text-[10px] flex-shrink-0 ${
+                isSelected ? 'bg-aruba text-white' : 'bg-slate-800 text-slate-400'
+              }">${opt.key}</span>
+              <div class="flex-1 whitespace-pre-line leading-snug">${opt.text}</div>
+            `;
+            optSlot.appendChild(div);
+          });
+        }
+      }
+
+      document.getElementById('btn-prev').disabled = (curIdx === 0);
+      const nextBtn = document.getElementById('btn-next');
+      if (curIdx === curList.length - 1) {
+        nextBtn.innerHTML = `完成交卷 <i class="fa-solid fa-check ml-1"></i>`;
+      } else {
+        nextBtn.innerHTML = `下一題 <i class="fa-solid fa-arrow-right ml-1"></i>`;
+      }
+    }
+
+    function renderInteractiveDragUI(q, container) {
+      const state = userAnswers[q.id];
+      const wrap = document.createElement('div');
+      wrap.className = "space-y-3 pt-1";
+
+      wrap.innerHTML = `
+        <div class="flex items-center justify-between text-[11px] text-slate-400 pb-1">
+          <span><i class="fa-solid fa-hand-pointer text-aruba mr-1"></i>操作：<b>點選卡片 ➔ 點目標空格</b> 放入</span>
+          <button onclick="resetDragQuestion(${q.id})" class="text-slate-400 hover:text-white underline text-[10px]">清空重來</button>
+        </div>
+      `;
+
+      const grid = document.createElement('div');
+      grid.className = "grid grid-cols-1 md:grid-cols-2 gap-3";
+
+      const leftCol = document.createElement('div');
+      leftCol.className = "space-y-2";
+      leftCol.innerHTML = `<div class="text-[11px] font-bold text-cyan-400 uppercase tracking-wider mb-1"><i class="fa-solid fa-list-ol mr-1"></i>目標空格</div>`;
+
+      q.slots.forEach((slotLabel, sIdx) => {
+        const slotDiv = document.createElement('div');
+        slotDiv.className = "drop-slot p-2 rounded-xl border border-dashed border-slate-700 bg-slate-950/60 flex flex-col justify-center relative";
+        slotDiv.dataset.slotIdx = sIdx;
+
+        slotDiv.ondragover = (e) => { e.preventDefault(); slotDiv.classList.add('drag-over'); };
+        slotDiv.ondragleave = () => { slotDiv.classList.remove('drag-over'); };
+        slotDiv.ondrop = (e) => {
+          e.preventDefault();
+          slotDiv.classList.remove('drag-over');
+          const itemText = e.dataTransfer.getData("text/plain");
+          if (itemText) placeItemIntoSlot(itemText, sIdx);
+        };
+
+        slotDiv.onclick = () => {
+          if (selectedSourceItem) {
+            placeItemIntoSlot(selectedSourceItem, sIdx);
+            selectedSourceItem = null;
+            renderQ();
+          }
+        };
+
+        const assignedItem = state.placed[sIdx];
+        if (assignedItem) {
+          slotDiv.className = "drop-slot p-2 rounded-xl border border-aruba/60 bg-aruba/10 flex items-center justify-between text-xs text-white";
+          slotDiv.innerHTML = `
+            <div class="flex items-start gap-2 flex-1 pr-2">
+              <span class="w-5 h-5 rounded bg-aruba text-white font-bold text-[10px] flex items-center justify-center flex-shrink-0 mt-0.5">${sIdx + 1}</span>
+              <div class="leading-tight flex-1">
+                <span class="text-[10px] text-slate-400 block">${slotLabel}</span>
+                <span class="font-medium text-amber-200">${assignedItem}</span>
+              </div>
+            </div>
+            <button onclick="event.stopPropagation(); removeItemFromSlot(${q.id}, ${sIdx})" class="text-slate-400 hover:text-rose-400 text-xs px-1.5 py-1 touch-btn">
+              <i class="fa-solid fa-xmark"></i>
+            </button>
+          `;
+        } else {
+          slotDiv.innerHTML = `
+            <div class="flex items-center gap-2 text-xs text-slate-500">
+              <span class="w-5 h-5 rounded border border-slate-700 bg-slate-900 text-slate-400 font-mono text-[10px] flex items-center justify-center flex-shrink-0">${sIdx + 1}</span>
+              <div class="flex-1">
+                <span class="text-[11px] text-slate-400 block">${slotLabel}</span>
+                <span class="text-[10px] text-slate-500 italic">點選放入...</span>
+              </div>
+            </div>
+          `;
+        }
+        leftCol.appendChild(slotDiv);
+      });
+
+      const rightCol = document.createElement('div');
+      rightCol.className = "space-y-2";
+      rightCol.innerHTML = `<div class="text-[11px] font-bold text-emerald-400 uppercase tracking-wider mb-1"><i class="fa-solid fa-box-open mr-1"></i>答案卡片池</div>`;
+
+      let availableItems = [];
+      if (q.isMultiUse) {
+        availableItems = [...q.items];
+      } else {
+        const placedValues = Object.values(state.placed);
+        availableItems = state.pool.filter(item => !placedValues.includes(item));
+      }
+
+      if (availableItems.length === 0) {
+        rightCol.innerHTML += `<div class="text-xs text-slate-500 italic p-3 border border-slate-800 rounded-xl bg-slate-950/40 text-center">所有卡片皆已放置</div>`;
+      } else {
+        availableItems.forEach((itemText) => {
+          const itemDiv = document.createElement('div');
+          const isSelected = (selectedSourceItem === itemText);
+          itemDiv.className = `drag-item p-2.5 rounded-xl border text-xs text-slate-200 flex items-center justify-between touch-btn ${
+            isSelected ? 'selected border-aruba bg-aruba/30 text-white shadow-md' : 'border-slate-800 bg-[#0B1120] hover:border-slate-700'
+          }`;
+          itemDiv.draggable = true;
+
+          itemDiv.ondragstart = (e) => {
+            e.dataTransfer.setData("text/plain", itemText);
+            itemDiv.style.opacity = '0.4';
+          };
+          itemDiv.ondragend = () => { itemDiv.style.opacity = '1'; };
+
+          itemDiv.onclick = () => {
+            if (selectedSourceItem === itemText) {
+              selectedSourceItem = null;
+            } else {
+              selectedSourceItem = itemText;
+            }
+            renderQ();
+          };
+
+          itemDiv.innerHTML = `
+            <span class="leading-tight select-none">${itemText}</span>
+            <i class="fa-solid fa-grip-vertical text-slate-500 text-xs ml-2 flex-shrink-0"></i>
+          `;
+          rightCol.appendChild(itemDiv);
+        });
+      }
+
+      grid.appendChild(leftCol);
+      grid.appendChild(rightCol);
+      wrap.appendChild(grid);
+      container.appendChild(wrap);
+    }
+
+    function placeItemIntoSlot(itemText, slotIdx) {
+      const q = curList[curIdx];
+      const state = userAnswers[q.id];
+      state.placed[slotIdx] = itemText;
+      renderQ();
+    }
+
+    function removeItemFromSlot(qId, slotIdx) {
+      const state = userAnswers[qId];
+      if (state && state.placed) {
+        delete state.placed[slotIdx];
+        renderQ();
+      }
+    }
+
+    function resetDragQuestion(qId) {
+      const q = curList.find(item => item.id === qId);
+      if (q) {
+        userAnswers[qId] = {
+          placed: {},
+          pool: q.isMultiUse ? [...q.items] : [...q.items].sort(() => Math.random() - 0.5)
+        };
+        selectedSourceItem = null;
+        renderQ();
+      }
+    }
+
+    function selectOption(optText) {
+      const q = curList[curIdx];
+      const isMultiple = q.correctTexts.length > 1;
+
+      if (isMultiple) {
+        let list = Array.isArray(userAnswers[q.id]) ? [...userAnswers[q.id]] : [];
+        if (list.includes(optText)) {
+          list = list.filter(t => t !== optText);
+        } else {
+          list.push(optText);
+        }
+        userAnswers[q.id] = list;
+      } else {
+        userAnswers[q.id] = optText;
+      }
+      renderQ();
+    }
+
+    function toggleExplain() {
+      const q = curList[curIdx];
+      if (!q) return;
+
+      const box = document.getElementById('q-explain-box');
+      const keyEl = document.getElementById('q-explain-key');
+      const textEl = document.getElementById('q-explain-text');
+
+      if (q.isDrag) {
+        let ansSummary = "";
+        q.correctMatches.forEach((match, idx) => {
+          ansSummary += `【空格 ${idx + 1}】${match} ； `;
+        });
+        keyEl.innerText = ansSummary;
+      } else {
+        const currentOpts = q.currentOptions || q.originalOptions || [];
+        let matchingCurrentKeys = [];
+        currentOpts.forEach(o => {
+          if (q.correctTexts.includes(o.text)) {
+            matchingCurrentKeys.push(`${o.key}. ${o.text}`);
+          }
+        });
+        keyEl.innerText = matchingCurrentKeys.join('  |  ');
+      }
+
+      textEl.innerText = q.explanation || "原廠認證考試核心觀念。";
+      box.style.display = (box.style.display === 'none' ? 'block' : 'none');
+    }
+
+    function nextQ() {
+      if (curIdx < curList.length - 1) {
+        curIdx++;
+        selectedSourceItem = null;
+        renderQ();
+      } else {
+        finishQuiz();
+      }
+    }
+
+    function prevQ() {
+      if (curIdx > 0) {
+        curIdx--;
+        selectedSourceItem = null;
+        renderQ();
+      }
+    }
+
+    function finishQuiz() {
+      let correct = 0;
+      let total = curList.length;
+
+      curList.forEach(q => {
+        let isOk = false;
+        const u = userAnswers[q.id];
+
+        if (q.isDrag) {
+          if (u && u.placed) {
+            const matches = q.correctMatches;
+            let allMatch = true;
+            for (let i = 0; i < matches.length; i++) {
+              if (u.placed[i] !== matches[i]) {
+                allMatch = false;
+                break;
+              }
+            }
+            if (allMatch && Object.keys(u.placed).length === matches.length) isOk = true;
+          }
+        } else {
+          const isMultiple = q.correctTexts.length > 1;
+          if (isMultiple) {
+            if (Array.isArray(u) && u.length === q.correctTexts.length) {
+              const uSorted = [...u].sort();
+              const cSorted = [...q.correctTexts].sort();
+              if (JSON.stringify(uSorted) === JSON.stringify(cSorted)) isOk = true;
+            }
+          } else {
+            if (u && q.correctTexts.includes(u)) isOk = true;
+          }
+        }
+
+        if (isOk) {
+          correct++;
+          wrongIds.delete(q.id);
+        } else {
+          wrongIds.add(q.id);
+        }
+      });
+
+      saveStoredWrongs(wrongIds);
+      updateWrongCountBadge();
+
+      const pct = Math.round((correct / total) * 100);
+      document.getElementById('score-pct').innerText = `${pct}%`;
+      document.getElementById('score-count').innerText = `${correct} / ${total} 題`;
+
+      document.getElementById('view-quiz').style.display = 'none';
+      document.getElementById('view-score').style.display = 'flex';
+    }
+
+    function openDatabaseModal() {
+      const m = document.getElementById('modal-database');
+      if (m) {
+        m.style.display = 'flex';
+        if (!dbRendered) {
+          renderDatabaseModalList();
+          dbRendered = true;
+        }
+        const input = document.getElementById('db-search-input');
+        if (input) input.focus();
+      }
+    }
+
+    function closeDatabaseModal() {
+      const m = document.getElementById('modal-database');
+      if (m) m.style.display = 'none';
+    }
+
+    function setDbFilter(f) {
+      dbFilter = f;
+      document.querySelectorAll('.db-chip').forEach(btn => {
+        if (btn.dataset.filter === f) {
+          btn.className = "db-chip active whitespace-nowrap px-2.5 py-1 rounded-lg font-bold bg-aruba text-white";
+        } else {
+          btn.className = "db-chip whitespace-nowrap px-2.5 py-1 rounded-lg bg-slate-800 text-slate-300 border border-slate-700";
+        }
+      });
+      filterDatabase();
+    }
+
+    function renderDatabaseModalList() {
+      const container = document.getElementById('db-list-container');
+      if (!container) return;
+      container.innerHTML = '';
+
+      EXAM_DATABASE.forEach(item => {
+        const card = document.createElement('div');
+        card.className = "db-card bg-slate-900 border border-slate-800 rounded-2xl p-3.5 sm:p-4 space-y-2.5 shadow-md";
+        card.dataset.id = item.id;
+        card.dataset.diagram = item.isDiagram ? "true" : "false";
+        card.dataset.drag = item.isDrag ? "true" : "false";
+        card.dataset.purechoice = (!item.isDiagram && !item.isDrag) ? "true" : "false";
+
+        let badgeHtml = item.isDiagram 
+          ? '<span class="text-[10px] bg-blue-500/20 text-blue-400 font-bold px-2 py-0.5 rounded border border-blue-500/30">🖼️ 圖示拓撲</span>'
+          : (item.isDrag 
+              ? '<span class="text-[10px] bg-emerald-500/20 text-emerald-400 font-bold px-2 py-0.5 rounded border border-emerald-500/30">🧩 拖曳配對</span>'
+              : '<span class="text-[10px] bg-slate-800 text-slate-400 font-bold px-2 py-0.5 rounded">📝 純選擇題</span>');
+
+        let html = `
+          <div class="flex items-center justify-between border-b border-slate-800 pb-1.5">
+            <div class="flex items-center gap-2">
+              <span class="w-6 h-6 rounded bg-slate-800 text-aruba font-bold font-mono text-xs flex items-center justify-center">#${item.id}</span>
+              <span class="font-bold text-white text-xs">Question ${item.id}</span>
+            </div>
+            ${badgeHtml}
+          </div>
+          <div class="text-xs sm:text-sm text-slate-100 font-medium leading-relaxed whitespace-pre-line">${item.question}</div>
+        `;
+
+        if (item.diagram) html += item.diagram;
+
+        if (item.originalOptions && item.originalOptions.length > 0) {
+          html += `<div class="space-y-1 pt-1">`;
+          item.originalOptions.forEach(opt => {
+            const isCorrect = item.correctTexts.includes(opt.text.trim());
+            let optCls = isCorrect ? "border-emerald-500/60 bg-emerald-500/10 text-emerald-300 font-medium" : "border-slate-800/80 bg-[#070D18] text-slate-400";
+            html += `
+              <div class="p-2 rounded-xl border text-xs flex items-start gap-2 ${optCls}">
+                <span class="w-4 h-4 rounded flex items-center justify-center font-bold text-[9px] flex-shrink-0 ${isCorrect ? 'bg-emerald-600 text-white' : 'bg-slate-800 text-slate-400'}">${opt.key}</span>
+                <div class="flex-1 leading-snug whitespace-pre-line">${opt.text}</div>
+              </div>
+            `;
+          });
+          html += `</div>`;
+        }
+
+        html += `
+          <div class="bg-[#070D18] p-3 rounded-xl border border-slate-800 text-xs space-y-1 mt-2">
+            <div class="flex items-center gap-2">
+              <span class="text-slate-400 font-bold">標準答案：</span>
+              <span class="font-mono font-bold text-emerald-400">${Array.isArray(item.answer) ? item.answer.join(', ') : item.answer}</span>
+            </div>
+            <div class="text-slate-300 text-[11px] leading-relaxed pt-0.5 border-t border-slate-800/60">
+              <b class="text-aruba mr-1"><i class="fa-solid fa-lightbulb mr-1"></i>原因與官方解析：</b>${item.explanation || ''}
+            </div>
+          </div>
+        `;
+
+        card.innerHTML = html;
+        container.appendChild(card);
+      });
+      document.getElementById('db-counter').innerText = `共 ${EXAM_DATABASE.length} 題`;
+    }
+
+    function filterDatabase() {
+      const query = document.getElementById('db-search-input').value.trim().toLowerCase();
+      const cards = document.querySelectorAll('.db-card');
+      let count = 0;
+
+      cards.forEach(card => {
+        const isDiag = card.dataset.diagram === "true";
+        const isDrag = card.dataset.drag === "true";
+        const isPureChoice = card.dataset.purechoice === "true";
+        const id = card.dataset.id;
+        const text = card.innerText.toLowerCase();
+
+        let matchType = true;
+        if (dbFilter === 'diagram' && !isDiag) matchType = false;
+        if (dbFilter === 'drag' && !isDrag) matchType = false;
+        if (dbFilter === 'pure_choice' && !isPureChoice) matchType = false;
+
+        let matchQuery = true;
+        if (query) {
+          matchQuery = `#${id}`.includes(query) || `q${id}`.includes(query) || text.includes(query);
+        }
+
+        if (matchType && matchQuery) {
+          card.style.display = 'block';
+          count++;
+        } else {
+          card.style.display = 'none';
+        }
+      });
+
+      document.getElementById('db-counter').innerText = `符合 ${count} 題`;
+    }
+
+    updateWrongCountBadge();
+  </script>
+</body>
+</html>
